@@ -21,6 +21,10 @@ Les révisions espacées sont intégrées à l’application : 31 éléments du 
 module proposent 50 cartes courtes. La sélection et l’historique de révision
 sont propres au profil local.
 
+La médiathèque relie des podcasts, une vidéo et un guide audio aux passages du
+module. Chaque ressource possède un objectif d’écoute, des notes personnelles
+et, pour les lecteurs intégrés, un repère de reprise.
+
 ## Prérequis
 
 - Node.js **24.21.0**, version de référence indiquée dans `.nvmrc`.
@@ -298,6 +302,34 @@ formulation à comparer, sans déclarer une variante fausse ni noter la maîtris
 Consulter un modèle indique une aide pour cet essai. Les essais antérieurs
 restent immuables, même si la scène évolue. Les sources audio sont résolues par
 version et réplique. Aucun microphone n’est utilisé.
+
+### Médiathèque
+
+**Médiathèque** rassemble quatre ressources publiques de
+[Ukrainian Lessons](https://www.ukrainianlessons.com/) autour de l’alphabet,
+des salutations et de la présentation. Les enregistrements sont en ukrainien,
+avec des explications en anglais. Les objectifs et consignes d’écoute sont
+en français ; chaque fiche renvoie aux passages correspondants du module.
+
+**Charger le lecteur** contacte l’hébergeur de la vidéo YouTube ou du podcast
+Buzzsprout. Aucun lecteur externe n’est chargé avant cette action et la lecture
+ne démarre pas automatiquement. Les médias restent chez leurs éditeurs : ils ne
+sont ni copiés dans le dépôt ni conservés dans la base locale. Le guide audio
+s’ouvre sur le site de l’auteur. Le lien **Ouvrir la source officielle** reste
+disponible si un hébergeur bloque la lecture intégrée.
+
+**Garder ce repère** enregistre la position du lecteur ou un temps saisi
+manuellement. La prochaine ouverture prépare ce point, puis laisse démarrer
+la lecture. Les durées affichées sont indicatives ; les annonces insérées dans
+un podcast peuvent déplacer les passages. Fermer le lecteur ou quitter la page
+arrête la lecture ; masquer l’onglet la met en pause.
+
+Les notes se sauvegardent avec **Enregistrer mes notes**, indépendamment du
+repère. Une copie temporaire peut être retrouvée dans le même onglet. Deux
+versions concurrentes sont présentées avant remplacement ; réessayer une
+sauvegarde déjà reçue ne l’applique pas une seconde fois. Ouvrir une ressource
+ou l’écouter n’attribue aucun résultat d’apprentissage et n’ajoute aucune carte
+aux révisions.
 
 ### Profil local
 

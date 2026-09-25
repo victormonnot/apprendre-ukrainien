@@ -64,6 +64,12 @@ export default function CourseCatalogPage() {
         <Link href="/cafe">Entrer dans le café ↗</Link>
         <span>Réutiliser les expressions du module dans une conversation.</span>
       </div>
+      <div className="resource-module-link">
+        <Link href="/ressources">Explorer les écoutes du module ↗</Link>
+        <span>
+          Alphabet, salutations et présentations avec Ukrainian Lessons.
+        </span>
+      </div>
       <section className="work-method" aria-labelledby="work-method-title">
         <h2 id="work-method-title">Trois supports, un même module</h2>
         <div className="support-grid">

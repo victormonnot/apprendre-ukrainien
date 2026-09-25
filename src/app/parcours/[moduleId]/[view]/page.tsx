@@ -88,7 +88,8 @@ export default async function CourseDocumentPage({ params }: PageProps) {
           Pour retrouver ce que tu viens d’étudier :{" "}
           <Link href="/revisions">choisir mes éléments à réviser</Link> ou{" "}
           <Link href="/studio">écouter et répéter dans le studio</Link>, puis{" "}
-          <Link href="/cafe">retrouver ces expressions au café</Link>.
+          <Link href="/cafe">retrouver ces expressions au café</Link>.{" "}
+          <Link href="/ressources">Podcasts et vidéos du module</Link>.
         </p>
       )}
       <details className="mobile-toc">

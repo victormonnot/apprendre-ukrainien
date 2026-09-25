@@ -10,6 +10,7 @@ const items = [
   { href: "/atelier", label: "Atelier", symbol: "↔" },
   { href: "/studio", label: "Studio d’écoute", symbol: "♫" },
   { href: "/cafe", label: "Le café", symbol: "☕" },
+  { href: "/ressources", label: "Médiathèque", symbol: "▷" },
   { href: "/revisions", label: "Révisions", symbol: "↻" },
 ];
 
@@ -36,7 +37,13 @@ export function AppSidebar() {
           <Link
             key={item.href}
             href={item.href}
-            aria-current={pathname === item.href ? "page" : undefined}
+            aria-current={
+              pathname === item.href ||
+              (item.href === "/ressources" &&
+                pathname.startsWith("/ressources/"))
+                ? "page"
+                : undefined
+            }
           >
             <span className="nav-symbol" aria-hidden="true">
               {item.symbol}

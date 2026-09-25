@@ -936,3 +936,22 @@ nav[aria-label="Sommaire"] a:hover {
   color: #755d47;
   font-size: 0.85rem;
 }
+.resource-module-link {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1rem;
+  padding: 1rem 1.3rem;
+  border: 1px solid #cbdde6;
+  border-radius: 0.7rem;
+  background: #edf4f8;
+}
+.resource-module-link a {
+  color: #285171;
+  font-weight: 650;
+  text-underline-offset: 0.2em;
+}
+.resource-module-link span {
+  color: #536b7d;
+  font-size: 0.85rem;
+}

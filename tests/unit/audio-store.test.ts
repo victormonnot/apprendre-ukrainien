@@ -395,6 +395,6 @@ test("migration five preserves all earlier learning data and migration checksums
   assert.equal(
     database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
       .count,
-    6,
+    7,
   );
 });
