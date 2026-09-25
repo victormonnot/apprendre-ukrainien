@@ -135,17 +135,31 @@ test.describe("audio playback and repetition", () => {
       .getByRole("button", { name: "Écouter « кава »", exact: true })
       .click();
     await expect(player).toHaveAttribute("data-audio-phase", "playing");
+    const audio = player.locator("audio");
+    // The UI enters playing while the native media engine is still starting.
+    // Wait for real playback so this exercises pausing a recording in progress.
+    await expect
+      .poll(
+        () =>
+          audio.evaluate((element: HTMLAudioElement) => element.currentTime),
+        {
+          message: "The recording must advance before testing pause and resume",
+          intervals: [50, 100],
+          timeout: 10_000,
+        },
+      )
+      .toBeGreaterThan(0);
     await player
       .getByRole("button", { name: "Mettre en pause « кава »", exact: true })
       .click();
     await expect(player).toHaveAttribute("data-audio-phase", "paused");
-    const audio = player.locator("audio");
     const paused = await audio.evaluate((element: HTMLAudioElement) => ({
       paused: element.paused,
       time: element.currentTime,
       url: element.currentSrc,
     }));
     expect(paused.paused).toBe(true);
+    expect(paused.time).toBeGreaterThan(0);
     await player.getByRole("button", { name: "Ralentir · 0,75×" }).click();
     expect(
       await audio.evaluate((element: HTMLAudioElement) => element.playbackRate),

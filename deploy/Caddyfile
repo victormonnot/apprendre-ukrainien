@@ -1,0 +1,18 @@
+{$APP_HOST} {
+	basic_auth {
+		{$APP_LOGIN} {$APP_PASSWORD_HASH}
+	}
+
+	encode zstd gzip
+
+	request_body {
+		max_size 268435456
+	}
+
+	reverse_proxy app:3000 {
+		header_up X-App-Proxy-Secret {$APP_PROXY_SECRET}
+		header_up -Authorization
+		header_down Cache-Control "private, no-store"
+		header_down X-Frame-Options "DENY"
+	}
+}

@@ -7,7 +7,7 @@ d’exercices à réaliser dans l’application ou sur papier. Les trois support
 et une mise en page d’impression, sur ordinateur et téléphone.
 
 Chaque support possède un point de reprise, une note personnelle et un bilan de
-travail déclaratif. Ces données sont conservées dans une base SQLite locale.
+travail déclaratif. Ces données sont conservées dans une base SQLite sur le serveur.
 Une consultation n’attribue aucun résultat d’apprentissage.
 
 Les treize exercices permettent d’enregistrer un brouillon, de remettre ses
@@ -48,15 +48,16 @@ Les éventuels réglages locaux pourront être placés dans `.env.local` ;
 
 ## Commandes
 
-| Commande           | Usage                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| `npm run dev`      | Démarrer le serveur de développement local.                                         |
-| `npm run check`    | Vérifier le formatage, le lint et les types.                                        |
-| `npm run format`   | Formater les fichiers source et de configuration.                                   |
-| `npm run build`    | Compiler l’application pour la production.                                          |
-| `npm start`        | Servir localement la compilation de production.                                     |
-| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium.             |
-| `npm test`         | Vérifier le stockage, les migrations, les corrections, le planificateur et l’audio. |
+| Commande               | Usage                                                                               |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| `npm run dev`          | Démarrer le serveur de développement local.                                         |
+| `npm run check`        | Vérifier le formatage, le lint et les types.                                        |
+| `npm run format`       | Formater les fichiers source et de configuration.                                   |
+| `npm run build`        | Compiler l’application pour la production.                                          |
+| `npm start`            | Servir localement la compilation de production.                                     |
+| `npm run test:e2e`     | Vérifier la navigation, les exercices et les sauvegardes avec Chromium.             |
+| `npm run test:hosting` | Vérifier l’accès HTTPS privé et la persistance dans une installation Docker isolée. |
+| `npm test`             | Vérifier le stockage, les migrations, les corrections, le planificateur et l’audio. |
 
 Avant de proposer une modification :
 
@@ -84,6 +85,12 @@ conflits entre onglets et la validation des requêtes. Les tests unitaires couvr
 les échéances, les changements de jour et d’heure, et les limites de nouveautés.
 Une base temporaire distincte est utilisée pour chaque lancement des tests : les
 données personnelles ne sont pas modifiées.
+
+`npm run test:hosting` nécessite Docker, Docker Compose et Chromium. Il utilise
+un projet Compose temporaire avec des identifiants de test et un certificat
+local, sur le port 3143. Il vérifie l’authentification, les accès entre deux
+navigateurs et la conservation des données après remplacement du conteneur,
+puis supprime uniquement ses conteneurs et volumes temporaires.
 
 ## Suivi personnel
 
@@ -331,12 +338,29 @@ sauvegarde déjà reçue ne l’applique pas une seconde fois. Ouvrir une ressou
 ou l’écouter n’attribue aucun résultat d’apprentissage et n’ajoute aucune carte
 aux révisions.
 
-### Profil local
+### Accès personnel
 
-Cette version utilise un seul profil local, partagé par les navigateurs qui
-ouvrent la même application. Elle écoute uniquement sur l’interface locale et
-réserve l’API personnelle aux requêtes locales de même origine. L’authentification,
-l’accès distant et la synchronisation entre appareils restent à ajouter.
+Cette version utilise un seul profil, partagé par les navigateurs qui ouvrent
+la même installation. Les commandes de développement et de démarrage écoutent
+uniquement sur l’interface locale.
+
+Une installation sur un VPS utilise HTTPS et une authentification au niveau de
+Caddy. L’ensemble du site, des API, des sons et des sauvegardes est protégé.
+Le navigateur demande un identifiant et un mot de passe ; ce premier mode
+personnel ne propose pas de gestion de comptes ni de bouton de déconnexion.
+L’application vérifie aussi l’origine configurée et le secret du proxy avant
+d’autoriser l’accès. Une configuration d’accès incomplète refuse les requêtes.
+
+Les données enregistrées se retrouvent depuis les autres appareils connectés au
+même serveur, après chargement de la page. Les brouillons non enregistrés et les
+préférences du navigateur restent propres à chaque appareil ; il n’y a pas de
+synchronisation hors ligne. Les conflits de modification conservent le texte
+local jusqu’au choix explicite de la version à garder.
+
+Le [guide de déploiement](deploy/README.md) décrit la configuration Docker Compose,
+le domaine, l’accès privé, les volumes persistants et les mises à jour. Une seule
+instance de l’application doit écrire dans la base. La configuration du proxy
+peut accueillir d’autres sites sur le même serveur.
 
 ### Sauvegardes et restauration
 
@@ -375,7 +399,7 @@ Ils ne sont pas réinjectés automatiquement dans le travail restauré. Cet expo
 JSON de brouillons sert à consulter et récupérer les textes ; il ne remplace
 pas la sauvegarde complète.
 
-La restauration s’effectue depuis un seul serveur local de l’application. Elle
+La restauration s’effectue depuis un seul serveur de l’application. Elle
 ne constitue pas une synchronisation entre appareils et ne publie pas les
 données.
 

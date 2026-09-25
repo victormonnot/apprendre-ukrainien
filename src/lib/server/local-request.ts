@@ -1,5 +1,10 @@
 import "server-only";
 import {
+  assertRequestAccess,
+  assertRequestOrigin,
+  RequestAccessError,
+} from "./request-access";
+import {
   assertWorkspaceGeneration,
   getWorkspaceGeneration,
   WORKSPACE_CHANGED_MESSAGE,
@@ -20,10 +25,12 @@ export function json(body: unknown, status = 200) {
     "Cache-Control": "private, no-store",
     Vary: "Origin",
   };
-  try {
-    headers["X-Workspace-Generation"] = getWorkspaceGeneration();
-  } catch {
-    /* Storage failures still need a usable HTTP response. */
+  if (![401, 403, 503].includes(status)) {
+    try {
+      headers["X-Workspace-Generation"] = getWorkspaceGeneration();
+    } catch {
+      /* Storage failures still need a usable HTTP response. */
+    }
   }
   if (
     status === 409 &&
@@ -54,29 +61,13 @@ export function requireLocalRequest(
   mutation = false,
   options: { checkGeneration?: boolean } = {},
 ) {
-  const host = request.headers.get("host");
-  const protocol = new URL(request.url).protocol;
-  const target = host ? new URL(`${protocol}//${host}`) : null;
-  if (
-    !target ||
-    target.host !== host ||
-    !["127.0.0.1", "localhost", "[::1]"].includes(target.hostname)
-  ) {
-    throw new RequestError(
-      "Le suivi personnel est accessible depuis l’application locale.",
-      403,
-    );
-  }
-  const origin = request.headers.get("origin");
-  if (
-    (mutation && origin !== target.origin) ||
-    (origin && origin !== target.origin) ||
-    request.headers.get("sec-fetch-site") === "cross-site"
-  ) {
-    throw new RequestError(
-      "Cette requête ne provient pas de l’application.",
-      403,
-    );
+  try {
+    const access = assertRequestAccess(request);
+    assertRequestOrigin(request, access, mutation);
+  } catch (error) {
+    if (error instanceof RequestAccessError)
+      throw new RequestError(error.message, error.status);
+    throw error;
   }
   if (
     options.checkGeneration !== false &&

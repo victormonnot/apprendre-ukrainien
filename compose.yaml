@@ -1,0 +1,50 @@
+name: apprendre-ukrainien
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 60s
+    environment:
+      APP_DATA_DIR: /app/.data
+      APP_ORIGIN: https://${APP_HOST:?Set APP_HOST in deploy/.env}
+      APP_PROXY_SECRET: ${APP_PROXY_SECRET:?Set APP_PROXY_SECRET in deploy/.env}
+      AUDIO_DISABLE_LOCAL: "1"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+    volumes:
+      - app_data:/app/.data
+    networks:
+      - application
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      APP_HOST: ${APP_HOST:?Set APP_HOST in deploy/.env}
+      APP_LOGIN: ${APP_LOGIN:?Set APP_LOGIN in deploy/.env}
+      APP_PASSWORD_HASH: ${APP_PASSWORD_HASH:?Set APP_PASSWORD_HASH in deploy/.env}
+      APP_PROXY_SECRET: ${APP_PROXY_SECRET:?Set APP_PROXY_SECRET in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - application
+
+networks:
+  application:
+
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:
