@@ -16,6 +16,10 @@ réponses puis de réessayer en conservant les tentatives précédentes. Les ré
 et variantes non reconnues restent à vérifier. L’audio intégré et l’assistance IA
 ne sont pas encore disponibles.
 
+Les révisions espacées sont intégrées à l’application : 31 éléments du premier
+module proposent 50 cartes courtes. La sélection et l’historique de révision
+sont propres au profil local.
+
 ## Prérequis
 
 - Node.js **24.21.0**, version de référence indiquée dans `.nvmrc`.
@@ -39,15 +43,15 @@ Les éventuels réglages locaux pourront être placés dans `.env.local` ;
 
 ## Commandes
 
-| Commande           | Usage                                                                   |
-| ------------------ | ----------------------------------------------------------------------- |
-| `npm run dev`      | Démarrer le serveur de développement local.                             |
-| `npm run check`    | Vérifier le formatage, le lint et les types.                            |
-| `npm run format`   | Formater les fichiers source et de configuration.                       |
-| `npm run build`    | Compiler l’application pour la production.                              |
-| `npm start`        | Servir localement la compilation de production.                         |
-| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium. |
-| `npm test`         | Vérifier le stockage, les migrations, les corrections et les ancres.    |
+| Commande           | Usage                                                                      |
+| ------------------ | -------------------------------------------------------------------------- |
+| `npm run dev`      | Démarrer le serveur de développement local.                                |
+| `npm run check`    | Vérifier le formatage, le lint et les types.                               |
+| `npm run format`   | Formater les fichiers source et de configuration.                          |
+| `npm run build`    | Compiler l’application pour la production.                                 |
+| `npm start`        | Servir localement la compilation de production.                            |
+| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium.    |
+| `npm test`         | Vérifier le stockage, les migrations, les corrections et le planificateur. |
 
 Avant de proposer une modification :
 
@@ -70,8 +74,9 @@ npm run test:e2e
 Les tests compilent l’application et démarrent un serveur de production local sur
 le port 3101, qui doit être libre. Ils couvrent les affichages ordinateur et mobile,
 les ancres, la cohérence des exercices, l’impression et la sauvegarde du travail.
-Ils vérifient aussi les remises, les réessais, les conflits entre onglets et
-la validation des requêtes.
+Ils vérifient aussi les remises, les réessais, le cycle de révision espacée, les
+conflits entre onglets et la validation des requêtes. Les tests unitaires couvrent
+les échéances, les changements de jour et d’heure, et les limites de nouveautés.
 Une base temporaire distincte est utilisée pour chaque lancement des tests : les
 données personnelles ne sont pas modifiées.
 
@@ -111,6 +116,55 @@ l’exercice. En cas de conflit entre onglets, les réponses locales sont affich
 les brouillons et les remises disponibles. Les supports imprimés restent sans
 réponses personnelles ni corrections.
 
+### Révisions espacées
+
+Ouvrir **Révisions**, puis ajouter les lettres, mots ou expressions déjà abordés
+dans le cours. L’ajout d’un élément active ses cartes : reconnaissance pour les
+lettres, compréhension et production pour les mots et expressions. Ajouter à
+nouveau le même élément ne crée pas de doublon et ne réinitialise pas son état.
+Les liens vers les supports permettent de retrouver le passage correspondant.
+
+Une carte montre d’abord la question. Répondre dans le champ, sur papier ou
+mentalement, puis choisir **Révéler la réponse**. Comparer sa réponse avant
+l’auto-évaluation :
+
+- **À revoir** : oubli, erreur ou réponse retrouvée avec une aide ;
+- **Difficile** : réponse juste, retrouvée sans aide mais avec peine ;
+- **Bien** : réponse juste après un effort de rappel normal ;
+- **Facile** : réponse juste, retrouvée immédiatement sans aide.
+
+Ce choix détermine la prochaine échéance ; la simple révélation ne valide pas la
+carte. Les aides de prononciation et l’accent apparaissent au verso. Les réponses
+ne reçoivent pas de note automatique : les résultats déclarés ne valident ni
+l’oral ni la maîtrise générale du cours.
+
+Le moteur utilise [ts-fsrs](https://open-spaced-repetition.github.io/ts-fsrs/),
+avec une cible de rétention de 0,9, les paramètres généraux de la version fixée
+et sans optimisation personnelle à ce stade. L’apprentissage initial comporte
+des étapes de 1 et 10 minutes ; un oubli après apprentissage prévoit une étape
+de 10 minutes. Les intervalles suivants sont calculés par FSRS. Ce réglage est
+une cible du moteur, pas une garantie de mémorisation.
+
+La file privilégie les rappels déjà commencés avant les nouvelles cartes, avec
+un plafond de **cinq nouvelles cartes par jour**. Les jours suivent le fuseau
+**Europe/Paris**, y compris les changements d’heure. Une première présentation
+réserve une place dans ce plafond. Après une auto-évaluation, les autres cartes
+du même élément attendent au moins le lendemain pour ne pas fournir un indice
+immédiat ; la carte travaillée peut revenir plus tôt selon son résultat. Les
+autres cartes échues restent disponibles, même si le plafond de nouveautés est
+atteint.
+
+Une tentative en cours se retrouve après rechargement ou redémarrage. Les
+réponses révélées et les auto-évaluations sont enregistrées ; une requête répétée
+ne crée pas une seconde révision. La mise en pause d’un élément conserve son
+historique et ses échéances. Terminer sa carte en cours avant de le mettre en
+pause. La réactivation reprend son état existant.
+
+Aucune progression provenant d’Anki ou des cours n’est importée automatiquement.
+Cette version n’effectue aucune synchronisation avec Anki. Les paramètres du
+moteur, l’état précédent, la définition de la carte et son résultat sont
+conservés avec la révision pour permettre les évolutions du planificateur.
+
 ### Profil local
 
 Cette version utilise un seul profil local, partagé par les navigateurs qui
@@ -131,6 +185,10 @@ historique et leur empreinte sont vérifiés à l’ouverture. Une migration dé
 appliquée ne doit pas être réécrite : ajouter une nouvelle migration numérotée.
 Le stockage utilise le module `node:sqlite` fourni par Node.js, sans service de
 base de données externe.
+
+Le planificateur et la correction s’exécutent côté serveur. Les réponses des
+cartes de révision sont envoyées lors de la révélation ; le navigateur ne choisit
+ni la date du rappel ni les paramètres du moteur.
 
 Les données sont rattachées à un identifiant de profil généré côté serveur. Les
 visites, points de reprise, bilans et opérations sur les exercices conservent un historique ; le texte des notes

@@ -82,6 +82,12 @@ export default async function CourseDocumentPage({ params }: PageProps) {
         view={document.view}
         sections={sections}
       />
+      {(view === "cours" || view === "vocabulaire") && (
+        <p className="document-review-link">
+          Pour retrouver ce que tu viens d’étudier :{" "}
+          <Link href="/revisions">choisir mes éléments à réviser</Link>.
+        </p>
+      )}
       <details className="mobile-toc">
         <summary>Sommaire de cette fiche</summary>
         <TableOfContents sections={sections} />

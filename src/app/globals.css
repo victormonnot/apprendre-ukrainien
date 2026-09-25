@@ -54,6 +54,50 @@ button {
 .skip-link:focus {
   transform: translateY(0);
 }
+.review-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.3rem 1.5rem;
+  margin: 1.5rem 0 2rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface);
+}
+.review-overview h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.review-overview p {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.review-overview .button {
+  flex-shrink: 0;
+}
+.document-review-link {
+  margin: 1rem 0 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+.document-review-link a {
+  color: var(--accent);
+  font-weight: 550;
+}
+@media (max-width: 760px) {
+  .review-overview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  .review-overview,
+  .document-review-link {
+    display: none !important;
+  }
+}
 .app-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -675,6 +719,7 @@ nav[aria-label="Sommaire"] a:hover {
   }
   .main-nav {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.35rem;
     padding: 1rem 0 0.7rem;
   }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { documentHref, modules } from "@/content/catalog";
 import { LearningOverview } from "@/components/learning-overview";
 import { ExerciseOverview } from "@/components/exercise-overview";
+import { ReviewOverview } from "@/components/review-overview";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -17,6 +18,7 @@ export default function CourseCatalogPage() {
         </p>
       </header>
       <LearningOverview />
+      <ReviewOverview />
       <div className="section-heading">
         <h2>Les premiers pas</h2>
         <span>{modules.length} module disponible</span>

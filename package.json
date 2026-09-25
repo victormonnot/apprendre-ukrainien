@@ -38,6 +38,7 @@
     "remark-gfm": "4.0.1",
     "remark-parse": "11.0.0",
     "server-only": "0.0.1",
+    "ts-fsrs": "5.4.2",
     "unified": "11.0.5"
   },
   "devDependencies": {
