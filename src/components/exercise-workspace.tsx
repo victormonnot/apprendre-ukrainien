@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   ExerciseConflictError,
@@ -287,11 +288,18 @@ function AttemptResult({
         </p>
         {attempt.assessment?.status !== "corrected" && (
           <p className="exercise-hint">
-            Les réponses « À vérifier » ne sont pas évaluées automatiquement.
-            Aucune correction différée n’est lancée pour ces réponses dans cette
-            version de l’application.
+            Les réponses « À vérifier » ne sont pas évaluées automatiquement. Tu
+            peux demander une relecture dans l’atelier ; ce retour généré reste
+            distinct de la correction et de tes réponses d’origine.
           </p>
         )}
+        <p className="exercise-hint">
+          <Link
+            href={`/atelier?exercise=${encodeURIComponent(attempt.exerciseId)}&attempt=${encodeURIComponent(attempt.id)}`}
+          >
+            Relire cette remise dans l’atelier
+          </Link>
+        </p>
         {attempt.definition.items.map((item) => {
           const answer = attempt.answers[item.id];
           const assessment = attempt.assessment?.items.find(

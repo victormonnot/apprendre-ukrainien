@@ -6,6 +6,7 @@ import { PrintButton } from "@/components/document-tools";
 import { TableOfContents } from "@/components/table-of-contents";
 import { documentHref, modules } from "@/content/catalog";
 import { getCourseDocument } from "@/lib/course-content";
+import { ContextualLanguageTools } from "@/components/contextual-language-tools";
 import { DocumentProgress } from "@/components/document-progress";
 
 type PageProps = { params: Promise<{ moduleId: string; view: string }> };
@@ -94,7 +95,9 @@ export default async function CourseDocumentPage({ params }: PageProps) {
       </details>
       <div className="reader-layout">
         <div className="reading-sheet">
-          <CourseMarkdown markdown={markdown} moduleId={module.id} />
+          <ContextualLanguageTools moduleId={module.id} view={document.view}>
+            <CourseMarkdown markdown={markdown} moduleId={module.id} />
+          </ContextualLanguageTools>
           <footer className="document-footer">
             <span>
               Module {module.id} · {document.label}

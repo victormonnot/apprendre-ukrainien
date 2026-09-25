@@ -13,8 +13,9 @@ Une consultation n’attribue aucun résultat d’apprentissage.
 Les treize exercices permettent d’enregistrer un brouillon, de remettre ses
 réponses puis de réessayer en conservant les tentatives précédentes. Les réponses
 écrites vérifiables reçoivent une correction automatique ; les productions libres
-et variantes non reconnues restent à vérifier. L’audio intégré et l’assistance IA
-ne sont pas encore disponibles.
+et variantes non reconnues restent à vérifier. L’atelier propose une relecture
+générée à la demande, distincte de la correction de référence. L’audio intégré
+n’est pas encore disponible.
 
 Les révisions espacées sont intégrées à l’application : 31 éléments du premier
 module proposent 50 cartes courtes. La sélection et l’historique de révision
@@ -37,7 +38,7 @@ npm run dev
 ```
 
 L’application est accessible sur <http://127.0.0.1:3000>.
-Aucune variable d’environnement ni aucun service externe n’est requis.
+Les cours, le suivi, la recherche locale et les révisions fonctionnent sans service externe.
 Les éventuels réglages locaux pourront être placés dans `.env.local` ;
 `.env.example` documente la configuration attendue sans contenir de secret.
 
@@ -105,8 +106,10 @@ les mêmes réponses et le même historique.
 La correction n’apparaît qu’après remise. Elle distingue les réponses justes,
 celles à reprendre et celles qui demandent une vérification. Une variante
 inconnue n’est pas automatiquement considérée comme fausse. Les textes libres,
-les explications et la prononciation ne sont pas évalués automatiquement dans
-cette version ; aucune correction différée n’est programmée. Une réussite ne
+les explications et la prononciation ne sont pas évalués automatiquement.
+**Relire cette remise dans l’atelier** permet de demander une aide écrite sur la
+copie conservée ; elle ne remplace ni la remise ni sa correction de référence.
+Une réussite ne
 modifie pas automatiquement le bilan personnel et ne vaut pas maîtrise.
 
 **Réessayer l’exercice** ouvre une tentative vierge. Les réponses, l’aide déclarée
@@ -164,6 +167,48 @@ Aucune progression provenant d’Anki ou des cours n’est importée automatique
 Cette version n’effectue aucune synchronisation avec Anki. Les paramètres du
 moteur, l’état précédent, la définition de la carte et son résultat sont
 conservés avec la révision pour permettre les évolutions du planificateur.
+
+### Recherche et atelier
+
+**Atelier** réunit une recherche français/ukrainien dans les références du module,
+la traduction contextualisée, l’explication d’un passage et la relecture d’un
+texte. Sélectionner un passage dans un support permet de l’ouvrir avec son
+contexte et un lien de retour. Une recherche locale ne contacte aucun fournisseur.
+
+**Enregistrer la fiche** conserve un résultat avec le texte demandé, le contexte,
+la source, le modèle et la date. Enregistrer à nouveau la même demande, dans le
+même contexte et depuis la même source, retrouve la fiche existante. Les espaces
+et variantes Unicode équivalentes sont normalisés pour cette comparaison ; les
+contextes et remises différents restent distincts. Une fiche issue du cours peut
+être ajoutée séparément aux révisions : cela active ses cartes existantes sans
+remettre leur planning à zéro. Les résultats générés sont conservés dans
+l’atelier et ne créent pas automatiquement de cartes de révision.
+
+Les réponses générées sont signalées et peuvent contenir des erreurs. Elles
+présentent les sens possibles, des exemples, et des repères français de
+prononciation approximatifs. Pour les mots isolés, la syllabe accentuée apparaît
+en gras avec sa position lorsque le modèle peut la proposer. Les aides écrites
+ne constituent pas une évaluation de la prononciation. La relecture ne note pas
+la maîtrise et doit conserver une incertitude quand plusieurs formulations
+peuvent convenir.
+
+Pour activer les demandes au modèle, créer `.env.local` à partir des indications
+de `.env.example` et définir `OPENAI_API_KEY`. `OPENAI_MODEL` permet de choisir
+un modèle compatible avec Responses et Structured Outputs ; la valeur par
+défaut est `gpt-5.4-mini`. Redémarrer le serveur après une modification. La clé
+reste côté serveur. Les appels sont facturés par le fournisseur sur le compte
+associé à cette clé.
+
+Seule une demande explicite transmet le texte, son contexte et les métadonnées
+de source à OpenAI. Une relecture d’exercice transmet les consignes et réponses
+remises, sans les notes personnelles ni le reste du suivi. Les appels utilisent
+`store: false` ; cela ne remplace pas les règles de conservation propres au
+fournisseur. Les réponses réussies sont conservées localement pour permettre une
+reprise après une perte de connexion ; **Enregistrer** les ajoute à la liste des
+fiches conservées. Réessayer une demande déjà reçue ne la régénère pas. Une panne
+avant son enregistrement local peut nécessiter un nouvel appel au fournisseur.
+Les requêtes sont limitées à une en cours et quatre lancements par minute sur le
+profil local. Une indisponibilité du modèle laisse les outils locaux accessibles.
 
 ### Profil local
 

@@ -1,0 +1,65 @@
+.contextual-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem;
+}
+.contextual-tools {
+  position: fixed;
+  z-index: 30;
+  bottom: 1rem;
+  left: max(15rem, calc(50% - 22rem));
+  right: 1rem;
+  max-width: 52rem;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #bdcddd;
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 36px #183e6926;
+}
+.contextual-tools p {
+  margin: 0 0 0.75rem;
+}
+.contextual-tools p span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.contextual-tools q {
+  display: block;
+  max-height: 3rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.contextual-tools > div {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.contextual-close {
+  margin-left: auto;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: #f1f4f8;
+  cursor: pointer;
+  font-size: 1.3rem;
+}
+@media (max-width: 760px) {
+  .contextual-tools {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    padding: 0.75rem;
+  }
+  .contextual-tools .button {
+    font-size: 0.8rem;
+  }
+}
+@media print {
+  .contextual-hint,
+  .contextual-tools {
+    display: none !important;
+  }
+}
