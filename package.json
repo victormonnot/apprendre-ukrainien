@@ -2,6 +2,7 @@
   "name": "apprendre-ukrainien",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Application d’apprentissage de l’ukrainien en français.",
   "packageManager": "npm@11.17.0",
   "engines": {
@@ -24,7 +25,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint && npm run typecheck",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test": "node --experimental-strip-types --test tests/unit/*.test.ts"
   },
   "dependencies": {
     "github-slugger": "2.0.0",

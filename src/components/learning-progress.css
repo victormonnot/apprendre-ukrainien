@@ -1,0 +1,144 @@
+.personal-work,
+.resume-card {
+  margin: 0 0 2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #cfdaef;
+  border-radius: 0.75rem;
+  background: #f9fbff;
+}
+.personal-work summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.personal-work summary > span:first-child {
+  margin-right: 1rem;
+}
+.personal-work-summary {
+  display: inline-block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+.personal-work-content {
+  padding-top: 1.5rem;
+}
+.personal-work-status p {
+  margin: 0;
+}
+.checkpoint-controls {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.checkpoint-controls p {
+  margin: 0.6rem 0;
+  font-size: 0.9375rem;
+}
+.checkpoint-controls label {
+  display: block;
+  margin-top: 1.1rem;
+  margin-bottom: 0.45rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.checkpoint-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.checkpoint-actions select {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  min-width: 0;
+  max-width: 40rem;
+  flex: 1;
+  min-height: 2.8rem;
+  border: 1px solid #aab8ce;
+  background: white;
+  border-radius: 0.4rem;
+  padding: 0.6rem;
+}
+.checkpoint-current a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.resume-card h2 {
+  font-size: 1.3rem;
+}
+.resume-card p {
+  margin: 0.5rem 0 0;
+}
+.resume-card .eyebrow {
+  margin: 0 0 0.55rem;
+}
+.resume-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem 2rem;
+}
+.resume-heading .button {
+  flex-shrink: 0;
+}
+.resume-placeholder {
+  min-height: 7rem;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.document-progress-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.4rem 0 0;
+}
+.document-progress-list li {
+  display: grid;
+  grid-template-columns: 7rem 7rem minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.document-progress-list a {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
+.resume-card .progress-explanation {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+@media (max-width: 760px) {
+  .personal-work,
+  .resume-card {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .personal-work-summary {
+    display: block;
+    margin-top: 0.3rem;
+  }
+  .checkpoint-actions,
+  .resume-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .document-progress-list li {
+    grid-template-columns: 1fr 1fr;
+  }
+  .document-progress-list .personal-report {
+    grid-column: 1 / -1;
+  }
+}
+@media print {
+  .personal-work,
+  .resume-card,
+  .resume-placeholder {
+    display: none !important;
+  }
+}

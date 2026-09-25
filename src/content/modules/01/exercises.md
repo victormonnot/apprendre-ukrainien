@@ -4,7 +4,7 @@ Cette fiche contient les **huit exercices du cours**, avec leurs numéros conser
 
 Les exercices 1 à 8 ne sont pas à refaire une deuxième fois si tu les as déjà faits dans le cours. Les activités 9 à 13 permettent de varier le travail et de cibler une difficulté.
 
-## Choisir son travail
+## Choisir son travail {#choisir}
 
 | Besoin du moment                                      | Activités utiles                                                       |
 | ----------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -15,7 +15,7 @@ Les exercices 1 à 8 ne sont pas à refaire une deuxième fois si tu les as déj
 
 Les compléments peuvent occuper deux ou trois séances de plus si tu souhaites tout travailler. Tu peux aussi en choisir deux ou trois, puis noter ceux qui te demandent encore de l’aide. La quantité terminée compte moins que ce que tu arrives à retrouver et à expliquer.
 
-## Exercices du cours — 1 à 8
+## Exercices du cours — 1 à 8 {#exercices-communs}
 
 **Travaille sur papier.** Garde les consignes ci-dessous visibles et cache les passages du cours et de la fiche de vocabulaire qui donnent les réponses pour tes essais sans aide. Tu peux imprimer cette fiche. Les exercices ne sont pas à faire tous le même jour.
 
@@ -103,7 +103,7 @@ Numérote **7a à 7d**. Écris seulement tes propres répliques. Tout le vocabul
 
 Date : __________ · Aide utilisée : __________
 
-## Compléments de la session 01 — 9 à 13
+## Compléments de la session 01 — 9 à 13 {#complements}
 
 Avant les exercices 9 et 10, lis le bloc « Quatre mots pour prolonger la lecture » de la [fiche de vocabulaire](/parcours/01/vocabulaire) ; ferme-la ensuite pour ton premier essai ; tu peux la rouvrir en signalant l’aide utilisée.
 
@@ -170,7 +170,7 @@ Voici le message de départ : **Добрий день! Мене звати Ан�
 
 Si tu utilises le message de départ comme modèle pour 13c, indique **A**. Les prénoms et les formules nécessaires sont déjà dans les fiches de la session.
 
-## Garder une trace du travail
+## Garder une trace du travail {#trace-du-travail}
 
 Conserve tes réponses dans ton cahier, avec les numéros et les aides utilisées : par exemple « 2a : … (S), 2b : … (A) ». Tu peux travailler **1 à 3**, puis **4 à 7**, et sélectionner des compléments **9 à 13** selon tes besoins. L’exercice 8 reste un rappel à faire un autre jour.
 

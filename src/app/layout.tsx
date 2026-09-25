@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
+import "@/components/learning-progress.css";
 
 export const metadata: Metadata = {
   title: {

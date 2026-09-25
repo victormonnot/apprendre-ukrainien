@@ -6,6 +6,7 @@ import { PrintButton } from "@/components/document-tools";
 import { TableOfContents } from "@/components/table-of-contents";
 import { documentHref, modules } from "@/content/catalog";
 import { getCourseDocument } from "@/lib/course-content";
+import { DocumentProgress } from "@/components/document-progress";
 
 type PageProps = { params: Promise<{ moduleId: string; view: string }> };
 
@@ -75,6 +76,12 @@ export default async function CourseDocumentPage({ params }: PageProps) {
           </Link>
         ))}
       </nav>
+      <DocumentProgress
+        key={`${module.id}/${document.view}`}
+        moduleId={module.id}
+        view={document.view}
+        sections={sections}
+      />
       <details className="mobile-toc">
         <summary>Sommaire de cette fiche</summary>
         <TableOfContents sections={sections} />

@@ -1,0 +1,150 @@
+.learning-notebook {
+  display: grid;
+  gap: 2rem;
+  min-width: 0;
+}
+.learning-notebook .notebook-section {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.learning-notebook .notebook-section + .notebook-section {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border);
+}
+.learning-notebook .notebook-heading {
+  margin-bottom: 0.4rem;
+}
+.learning-notebook h3,
+.learning-notebook h4,
+.learning-notebook p {
+  margin: 0;
+}
+.learning-notebook h3 {
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+}
+.learning-notebook h4 {
+  font-size: 1rem;
+}
+.learning-notebook .notebook-heading p {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+}
+.learning-notebook label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.learning-notebook textarea,
+.learning-notebook select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #aebbd0;
+  border-radius: 0.45rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.learning-notebook textarea {
+  resize: vertical;
+}
+.learning-notebook select + label {
+  margin-top: 0.6rem;
+}
+.learning-notebook .notebook-hint,
+.learning-notebook .notebook-status {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.learning-notebook .notebook-save-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.35rem;
+}
+.learning-notebook .notebook-button {
+  justify-self: start;
+  max-width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.45rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+.learning-notebook .notebook-button:hover:not(:disabled) {
+  background: #1b3c9e;
+}
+.learning-notebook .notebook-button-secondary {
+  background: var(--surface);
+  color: var(--accent);
+}
+.learning-notebook .notebook-button-secondary:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.learning-notebook .notebook-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.learning-notebook .notebook-error {
+  padding: 0.75rem;
+  border-left: 3px solid #a73535;
+  background: #fff2f1;
+  color: #822c2c;
+  font-size: 0.9rem;
+}
+.learning-notebook .notebook-conflict {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #dfc988;
+  border-radius: 0.45rem;
+  background: #fffbef;
+  font-size: 0.9rem;
+}
+.learning-notebook .notebook-conflict-label {
+  color: var(--text);
+  font-weight: 600;
+}
+.learning-notebook .notebook-saved-version {
+  max-height: 18rem;
+  overflow: auto;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.learning-notebook .notebook-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+.learning-notebook .notebook-checkbox input {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.2rem;
+  accent-color: var(--accent);
+}
+@media (max-width: 760px) {
+  .learning-notebook .notebook-save-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media print {
+  .learning-notebook {
+    display: none !important;
+  }
+}

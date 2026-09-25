@@ -5,6 +5,7 @@ coverage/
 test-results/
 playwright-report/
 data/
+.data/
 backups/
 uploads/
 .local/

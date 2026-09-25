@@ -2,7 +2,7 @@
 
 **Aucun prérequis en ukrainien.** Cette fiche fournit tout ce qu’il faut pour commencer. Son numéro désigne un module complet, à travailler sur plusieurs jours ou environ une semaine.
 
-## Le résultat que nous visons
+## Le résultat que nous visons {#objectif}
 
 À l’issue de cette session, tu devrais pouvoir utiliser un tableau pour déchiffrer un mot, reconnaître plusieurs lettres sans modèle, comprendre quelques mots courants et écrire un premier échange très court : saluer, donner ton prénom, remercier et prendre congé.
 
@@ -20,7 +20,7 @@ Tu disposes d’un alphabet complet **pour consulter**, et d’un groupe de lett
 
 Chaque passage peut prendre une ou plusieurs séances de 20–25 minutes. Avec la copie, l’écoute facultative et les révisions, prévois environ deux à trois heures au total, à ajuster librement. Tu peux lire le cours d’un bloc puis travailler ses exercices sur plusieurs jours.
 
-## 1. Comprendre l’écriture
+## 1. Comprendre l’écriture {#ecriture}
 
 ### Une autre écriture, pas un code à deviner
 
@@ -46,7 +46,7 @@ Les repères en lettres françaises donnent un point d’appui pour commencer. C
 
 Les consonnes finales indiquées se prononcent : **кіт**, notre mot pour « chat », se termine par un t audible. Un groupe comme **dèn** ne se lit pas avec le son nasal français de « dent » : on garde la voyelle puis le n. L’audio permettra d’affiner ces repères quand tu en auras besoin.
 
-## 2. L’alphabet de référence
+## 2. L’alphabet de référence {#alphabet}
 
 Le tableau suit l’ordre alphabétique ukrainien. Les rapprochements français décrivent des sons approximatifs ; certaines lettres modifient aussi la consonne qui les précède. Ces détails se préciseront avec les mots rencontrés.
 
@@ -107,7 +107,7 @@ Elles permettent de commencer à lire et de traiter plusieurs confusions fréque
 
 Pour vérifier un son isolé, consulte la lettre dans le [guide audio de l’alphabet](https://www.ukrainianlessons.com/ukrainian-alphabet/). Inutile de transformer cette consultation en récitation des 33 lettres.
 
-## 3. Lire un mot et repérer son accent
+## 3. Lire un mot et repérer son accent {#lecture-accent}
 
 ### Partir des lettres, puis les réunir
 
@@ -135,7 +135,7 @@ Les **MAJUSCULES** du repère français signalent la même syllabe que le gras u
 
 L’écriture courante reste **кава**, **Привіт**, sans tirets ni changement de casse au milieu. Pour tes réponses, l’orthographe normale suffit, sauf lorsqu’un exercice demande explicitement de montrer l’accent.
 
-## 4. Vocabulaire pour commencer à lire
+## 4. Vocabulaire pour commencer à lire {#premiers-mots}
 
 Ces sept mots permettent de lire des mots entiers avec les lettres prioritaires. Apprends **l’écriture et le sens ensemble**. Tu peux cacher une colonne pour te tester dans un sens, puis dans l’autre.
 
@@ -153,7 +153,7 @@ Ces sept mots permettent de lire des mots entiers avec les lettres prioritaires.
 
 Pour mémoriser, observe **кава**, cache le mot, puis essaie de l’écrire à partir de « café, boisson ». Une copie correcte avec le modèle et une réponse retrouvée sans modèle ne mesurent pas la même chose.
 
-## 5. Vocabulaire pour un premier échange
+## 5. Vocabulaire pour un premier échange {#premier-echange}
 
 Cette partie ajoute huit expressions ou modèles. Tu peux les comprendre et les utiliser **comme des blocs**, même si tu dois encore consulter quelques lettres. Leur grammaire sera développée dans les sessions où elle devient utile.
 
@@ -182,7 +182,7 @@ Dans **добрий**, « bri\*y » reste une seule syllabe. Le i\* correspond �
 
 **Будь ласка** change de traduction selon sa place dans l’échange. Si quelqu’un te remercie, cette formule signifie « de rien ». Dans une demande, elle signifie « s’il te plaît » ou « s’il vous plaît ». On apprend donc une expression avec son rôle dans une situation, pas seulement un mot français placé en face. Voir les usages présentés dans [le guide des premières expressions](https://www.ukrainianlessons.com/14-basic-ukrainian-phrases/).
 
-## 6. Construire un échange compris
+## 6. Construire un échange compris {#construire-echange}
 
 ### Donner son prénom
 
@@ -229,7 +229,7 @@ Relis un modèle, puis cache-le. Essaie de reconstruire les mêmes fonctions ave
 
 Tu passes ainsi d’une suite copiée à un petit choix de langue. C’est ce choix que les exercices vont travailler.
 
-## À noter dans mon cahier
+## À noter dans mon cahier {#cahier}
 
 Cette partie rassemble l’essentiel à recopier. Le grand alphabet reste une référence dans le cours ; tu n’as pas besoin de recopier toutes ses explications avant de commencer les exercices.
 
@@ -271,7 +271,7 @@ Sous ce bloc, recopie les **sept mots de la partie 4**, avec leur sens. Si cela 
 
 Garde quelques lignes pour noter les erreurs utiles après correction. Une fois la copie faite, ferme le modèle et tente un premier rappel : la copie seule ne suffit pas à savoir ce qui est mémorisé.
 
-## Exercices sur papier
+## Exercices sur papier {#exercices}
 
 **Travaille sur papier.** Garde les consignes ci-dessous visibles et cache les passages du cours et de la fiche de vocabulaire qui donnent les réponses pour tes essais sans aide. Tu peux imprimer cette fiche. Les exercices ne sont pas à faire tous le même jour.
 
@@ -361,7 +361,7 @@ Numérote **7a à 7d**. Écris seulement tes propres répliques. Tout le vocabul
 
 Date : __________ · Aide utilisée : __________
 
-## Audio et outils utiles
+## Audio et outils utiles {#ressources}
 
 L’oral accompagne la session quand il clarifie un son ou une formule. Cinq minutes sur un extrait compris peuvent suffire ; tu peux faire le reste du travail à l’écrit.
 
@@ -378,7 +378,7 @@ Pour écouter, suis une boucle simple : comprendre → écouter → faire une pa
 
 Les lignes en lettres latines éventuellement affichées par un outil peuvent être des **translittérations**. Elles obéissent à leurs propres conventions et ne sont pas nécessairement les mêmes aides françaises que dans cette fiche.
 
-## À la fin de la session
+## À la fin de la session {#bilan}
 
 Il est normal de consulter encore certaines lettres. Le point à vérifier est que tu puisses déjà reconstruire quelques mots et choisir des formules comprises, puis les retrouver un autre jour.
 

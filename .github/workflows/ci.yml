@@ -50,5 +50,8 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Test learning storage
+        run: npm test
+
       - name: Build and test learning documents
         run: npm run test:e2e

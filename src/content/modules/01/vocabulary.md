@@ -4,7 +4,7 @@
 
 La **syllabe en gras** porte l’accent tonique ; sa position est indiquée à côté. Les **MAJUSCULES** du repère français montrent le même accent. Pour écrire normalement, utilise la colonne « Ukrainien », sans les tirets pédagogiques.
 
-## Les sept premiers mots
+## Les sept premiers mots {#premiers-mots}
 
 | Ukrainien | Sens                      | Découpage et accent     | Repère français approximatif  |
 | --------- | ------------------------- | ----------------------- | ----------------------------- |
@@ -18,7 +18,7 @@ La **syllabe en gras** porte l’accent tonique ; sa position est indiquée à c
 
 **кава** désigne ici la boisson ; **мова**, une langue ou le langage. Références du cours : [кава](https://goroh.pp.ua/Словозміна/кава), [мова](https://goroh.pp.ua/Словозміна/мова), [кіт](https://goroh.pp.ua/Тлумачення/кіт).
 
-## Quatre mots pour prolonger la lecture
+## Quatre mots pour prolonger la lecture {#mots-complementaires}
 
 Cette extension de la session 01 utilise uniquement des **lettres déjà prioritaires dans le cours**, notamment **и** et **і**. Chaque mot contient une voyelle et une syllabe. Leurs sens sont à découvrir ici.
 
@@ -33,7 +33,7 @@ Dans **сік**, le s est adouci devant **і**. Dans **рис**, le s s’entend
 
 **сир** peut désigner du fromage frais caillé ou d’autres fromages, selon le contexte. **сік** signifie « jus » ; nous retenons ici l’usage pour une boisson. Sources : [кит](https://goroh.pp.ua/Тлумачення/кит), [сік](https://goroh.pp.ua/Тлумачення/сік), [рис](https://goroh.pp.ua/Тлумачення/рис), [сир](https://goroh.pp.ua/Тлумачення/сир).
 
-## Les huit expressions
+## Les huit expressions {#expressions}
 
 | Ukrainien     | Sens et usage                                          | Découpage et accent                                           | Repère français approximatif |
 | ------------- | ------------------------------------------------------ | ------------------------------------------------------------- | ---------------------------- |
@@ -48,7 +48,7 @@ Dans **сік**, le s est adouci devant **і**. Dans **рис**, le s s’entend
 
 Pour une première rencontre professionnelle pendant la journée, **Добрий день!** convient. **Привіт!** sert aux échanges informels. Les [expressions essentielles de Ukrainian Lessons](https://www.ukrainianlessons.com/ph-essential/) donnent les formules, leurs usages et leurs audios.
 
-## Les distinctions utiles
+## Les distinctions utiles {#distinctions}
 
 ### кіт et кит : une lettre change le mot
 
@@ -66,7 +66,7 @@ Associe **кава** à une tasse de café. Le français « café » peut nommer
 
 Dans une **demande**, **Будь ласка** signifie « s’il te plaît » ou « s’il vous plaît ». En **réponse à Дякую**, elle signifie « de rien ». L’expression reste écrite en **deux mots** ; le contexte indique son rôle. Ces deux emplois suffisent pour cette session.
 
-## Prénoms utiles
+## Prénoms utiles {#prenoms}
 
 | Ukrainien | Prénom français | Découpage et accent      | Repère français approximatif    |
 | --------- | --------------- | ------------------------ | ------------------------------- |
@@ -75,7 +75,7 @@ Dans une **demande**, **Будь ласка** signifie « s’il te plaît » ou
 
 Les deux personnages fictifs du cours sont Maxime et Anna. Modèle : **Мене звати + prénom.** Références : [Максим](https://slovnyk.me/dict/orthography/Максим) et [Анна](https://goroh.pp.ua/Словозміна/Анна).
 
-## Trois petits exemples compris
+## Trois petits exemples compris {#exemples}
 
 Ces exemples associent les mots à une situation et réutilisent les modèles déjà expliqués. Ils n’ajoutent pas de nouvelle règle grammaticale.
 
@@ -87,7 +87,7 @@ Ces exemples associent les mots à une situation et réutilisent les modèles d�
 
 Dans la dernière ligne, chaque mot est une **légende autonome**. La barre sépare les deux images ; l’ensemble ne forme pas une phrase ukrainienne.
 
-## Lire les repères français
+## Lire les repères français {#prononciation}
 
 Ces aides sont des **approximations**, pas une translittération standard. Elles servent de point d’appui ; les [audios de l’alphabet](https://www.ukrainianlessons.com/ukrainian-alphabet/) et des expressions permettent d’affiner les sons.
 

@@ -11,11 +11,22 @@ export type Section = { id: string; title: string };
 function assignHeadingIds(tree: MarkdownRoot) {
   const slugger = new GithubSlugger();
   const sections: Section[] = [];
+  const usedIds = new Set<string>();
 
   for (const node of tree.children) {
     if (node.type !== "heading") continue;
+    const last = node.children.at(-1);
+    const explicitId =
+      last?.type === "text"
+        ? last.value.match(/\s+\{#([a-z0-9][a-z0-9-]*)\}$/)?.[1]
+        : undefined;
+    if (explicitId && last?.type === "text") {
+      last.value = last.value.replace(/\s+\{#[a-z0-9][a-z0-9-]*\}$/, "");
+    }
     const title = toString(node);
-    const id = slugger.slug(title);
+    const id = explicitId ?? slugger.slug(title);
+    if (usedIds.has(id)) throw new Error(`Duplicate heading identifier: ${id}`);
+    usedIds.add(id);
     node.data = {
       ...node.data,
       hProperties: { ...node.data?.hProperties, id },

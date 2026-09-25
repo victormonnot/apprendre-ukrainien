@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { documentHref, modules } from "@/content/catalog";
+import { LearningOverview } from "@/components/learning-overview";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -14,6 +15,7 @@ export default function CourseCatalogPage() {
           Des cours à explorer à ton rythme, un module après l’autre.
         </p>
       </header>
+      <LearningOverview />
       <div className="section-heading">
         <h2>Les premiers pas</h2>
         <span>{modules.length} module disponible</span>
