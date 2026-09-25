@@ -60,6 +60,10 @@ export default function CourseCatalogPage() {
           </div>
         </section>
       ))}
+      <div className="cafe-module-link">
+        <Link href="/cafe">Entrer dans le café ↗</Link>
+        <span>Réutiliser les expressions du module dans une conversation.</span>
+      </div>
       <section className="work-method" aria-labelledby="work-method-title">
         <h2 id="work-method-title">Trois supports, un même module</h2>
         <div className="support-grid">

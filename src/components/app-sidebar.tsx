@@ -8,6 +8,8 @@ const items = [
   { href: "/parcours/01/vocabulaire", label: "Vocabulaire", symbol: "Аа" },
   { href: "/parcours/01/exercices", label: "Exercices", symbol: "✎" },
   { href: "/atelier", label: "Atelier", symbol: "↔" },
+  { href: "/studio", label: "Studio d’écoute", symbol: "♫" },
+  { href: "/cafe", label: "Le café", symbol: "☕" },
   { href: "/revisions", label: "Révisions", symbol: "↻" },
 ];
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { AudioPlayer } from "@/components/audio-player";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -428,6 +429,15 @@ export function ReviewWorkspace() {
                 >
                   {revealed.answer}
                 </p>
+                {active.direction !== "recognition" && (
+                  <AudioPlayer
+                    source={{ kind: "review", attemptId: active.id }}
+                    text={
+                      active.cueLang === "uk" ? active.cue : revealed.answer
+                    }
+                    compact
+                  />
+                )}
                 <div className="review-answer-details">
                   <Markdown skipHtml rehypePlugins={[rehypeUkrainianLanguage]}>
                     {revealed.details}

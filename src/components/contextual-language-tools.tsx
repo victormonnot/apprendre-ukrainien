@@ -34,7 +34,10 @@ export function ContextualLanguageTools({
         range.startContainer.nodeType === Node.ELEMENT_NODE
           ? (range.startContainer as Element)
           : range.startContainer.parentElement;
-      if (!element || element.closest(".exercise-workspace, .contextual-tools"))
+      if (
+        !element ||
+        element.closest(".exercise-workspace, .contextual-tools, .audio-player")
+      )
         return;
       const text = selection.toString().trim();
       if (!text || text.length > 2000) return;

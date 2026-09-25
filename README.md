@@ -14,8 +14,8 @@ Les treize exercices permettent d’enregistrer un brouillon, de remettre ses
 réponses puis de réessayer en conservant les tentatives précédentes. Les réponses
 écrites vérifiables reçoivent une correction automatique ; les productions libres
 et variantes non reconnues restent à vérifier. L’atelier propose une relecture
-générée à la demande, distincte de la correction de référence. L’audio intégré
-n’est pas encore disponible.
+générée à la demande, distincte de la correction de référence. Un lecteur commun
+et un studio permettent d’écouter et de répéter les mots et phrases.
 
 Les révisions espacées sont intégrées à l’application : 31 éléments du premier
 module proposent 50 cartes courtes. La sélection et l’historique de révision
@@ -44,15 +44,15 @@ Les éventuels réglages locaux pourront être placés dans `.env.local` ;
 
 ## Commandes
 
-| Commande           | Usage                                                                      |
-| ------------------ | -------------------------------------------------------------------------- |
-| `npm run dev`      | Démarrer le serveur de développement local.                                |
-| `npm run check`    | Vérifier le formatage, le lint et les types.                               |
-| `npm run format`   | Formater les fichiers source et de configuration.                          |
-| `npm run build`    | Compiler l’application pour la production.                                 |
-| `npm start`        | Servir localement la compilation de production.                            |
-| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium.    |
-| `npm test`         | Vérifier le stockage, les migrations, les corrections et le planificateur. |
+| Commande           | Usage                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `npm run dev`      | Démarrer le serveur de développement local.                                         |
+| `npm run check`    | Vérifier le formatage, le lint et les types.                                        |
+| `npm run format`   | Formater les fichiers source et de configuration.                                   |
+| `npm run build`    | Compiler l’application pour la production.                                          |
+| `npm start`        | Servir localement la compilation de production.                                     |
+| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium.             |
+| `npm test`         | Vérifier le stockage, les migrations, les corrections, le planificateur et l’audio. |
 
 Avant de proposer une modification :
 
@@ -209,6 +209,95 @@ fiches conservées. Réessayer une demande déjà reçue ne la régénère pas. 
 avant son enregistrement local peut nécessiter un nouvel appel au fournisseur.
 Les requêtes sont limitées à une en cours et quatre lancements par minute sur le
 profil local. Une indisponibilité du modèle laisse les outils locaux accessibles.
+
+### Audio et studio d’écoute
+
+Les boutons **Écouter** sont disponibles dans les tableaux du cours et du
+vocabulaire, les fiches de l’atelier et les réponses révélées des cartes de
+révision. Le texte ukrainien de la référence est lu ; les lettres isolées ne sont
+pas présentées comme des sons de mots. Les exemples générés conservent le texte
+exact de leur fiche sauvegardée par le serveur.
+
+Le lecteur permet de mettre en pause, reprendre et réécouter. Le ralenti
+**0,75×** modifie la vitesse du même fichier, avec conservation de la hauteur de
+voix lorsque le navigateur le permet. Un seul lecteur fonctionne à la fois dans une page ;
+changer de passage ou quitter la page arrête l’ancienne lecture. Masquer l’onglet
+la met en pause. Aucun audio ne démarre à l’ouverture d’une page.
+
+**Studio d’écoute** propose les mots et formules du module, puis trois extraits
+pour se présenter. Choisir entre :
+
+- **Écouter** : une écoute, puis réécoute libre.
+- **Répéter après** : une série de 1, 3 ou 5 écoutes, avec 2, 4 ou 6 secondes de
+  silence entre les écoutes. La pause suspend aussi ce silence.
+- **Shadowing** : suivre la voix pendant la lecture d’un extrait compris.
+
+Le passage suivant reste un choix explicite. Le studio ne demande aucun accès au
+microphone, n’enregistre pas la voix de l’apprenant et n’attribue ni note ni
+résultat d’apprentissage. Les voix proposées sont des **synthèses**, avec leur
+fournisseur affiché ; les enregistrements de locuteurs cités dans le cours restent
+une référence complémentaire.
+
+Sur macOS, **Lesya** est proposée lorsque la voix ukrainienne est installée et
+accessible par `/usr/bin/say`. Les fichiers sont alors créés sur le serveur local,
+sans clé ni transmission externe. `AUDIO_DISABLE_LOCAL=1` désactive cette
+possibilité. Sur un autre système, les sons déjà conservés restent lisibles et
+les voix OpenAI peuvent être configurées.
+
+**Marin** et **Cedar** utilisent la même `OPENAI_API_KEY` que l’atelier. Le modèle
+audio est fixé à `gpt-4o-mini-tts-2025-12-15`, indépendamment de `OPENAI_MODEL`
+qui concerne les textes. Choisir une voix OpenAI et demander un son absent
+transmet son texte au fournisseur. La prononciation ukrainienne de ces voix doit
+être comparée sur les extraits ; leur présence dans la liste n’atteste pas d’une
+validation linguistique. Une voix indisponible pour créer de nouveaux sons reste
+sélectionnable pour écouter ceux qui ont déjà été conservés.
+
+Le premier appel crée un WAV privé dans la base SQLite ; les appels suivants
+réutilisent ce fichier pour le même texte normalisé, la même voix, le même modèle
+et la même version d’instructions. Réécouter ne relance pas une synthèse. Les
+sons ne sont pas dans le dépôt public. Texte, provenance, date et octets sont
+conservés ensemble et ne sont pas remplacés par une nouvelle génération. Les
+fichiers restent disponibles si le fournisseur devient inaccessible. La création
+est limitée à une demande simultanée et douze nouveaux sons par minute par
+profil, à 1 000 caractères et 8 Mio par fichier. Un redémarrage ou une coupure
+avant l’enregistrement peut nécessiter une nouvelle synthèse.
+
+### Le café
+
+**Le café** propose deux versions préparées d’une première rencontre entre Anna
+et Maxime. Chaque version réemploie huit répliques du module 01 : salutations,
+présentations, remerciements et départ. Un décor et la transcription situent les
+personnages ; la traduction et les aides de prononciation sont consultables à la
+demande. Ces dialogues sont du contenu de référence préparé, sans improvisation
+par un modèle.
+
+**Écouter la conversation** enchaîne les répliques à partir de celle qui est
+sélectionnée. Le lecteur commun conserve la voix et la vitesse entre les
+répliques ; il permet aussi de réécouter uniquement une phrase ou de la répéter
+avec des silences. La pause suspend la lecture, et changer de version, d’activité
+ou de réplique manuellement arrête l’enchaînement. Une même voix synthétique lit
+les deux personnages. Aucune lecture ne démarre à l’ouverture de la scène.
+
+Depuis une réplique, **Enregistrer l’expression** la retrouve dans l’atelier.
+**Ajouter aux révisions** active séparément ses cartes existantes, sans doublon
+ni remise à zéro de leur calendrier.
+
+**Prendre un rôle** permet d’écrire les quatre répliques d’Anna ou de Maxime.
+Les brouillons sont séparés par version et personnage. Le bouton de sauvegarde
+les conserve dans l’application ; changer de personnage, de version ou revenir
+à l’observation enregistre d’abord les modifications. En cas d’échec, les champs
+restent accessibles pour réessayer. Une copie temporaire dans l’onglet complète
+la sauvegarde serveur, sans la remplacer. Un conflit entre deux onglets propose
+les deux textes avant de choisir lequel conserver.
+
+**Remettre mon essai** conserve le texte exact, l’aide utilisée et la scène
+associée, puis ouvre un nouvel essai vide. Le modèle apparaît après remise ou
+sur demande explicite d’aide. La comparaison ignore la casse, les espaces
+superflus et la ponctuation ; elle distingue une forme retrouvée d’une
+formulation à comparer, sans déclarer une variante fausse ni noter la maîtrise.
+Consulter un modèle indique une aide pour cet essai. Les essais antérieurs
+restent immuables, même si la scène évolue. Les sources audio sont résolues par
+version et réplique. Aucun microphone n’est utilisé.
 
 ### Profil local
 

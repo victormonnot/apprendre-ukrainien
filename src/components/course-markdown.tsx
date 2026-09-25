@@ -1,3 +1,6 @@
+import type { Element, Text } from "hast";
+import { AudioPlayer } from "@/components/audio-player";
+import { findAudioSegment } from "@/content/audio";
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,6 +11,18 @@ import {
   rehypeUkrainianLanguage,
   remarkHeadingIds,
 } from "@/lib/markdown";
+
+function contentText(node: Element | Text): string {
+  return node.type === "text"
+    ? node.value
+    : node.children
+        .map((child) =>
+          child.type === "element" || child.type === "text"
+            ? contentText(child)
+            : "",
+        )
+        .join("");
+}
 
 export function CourseMarkdown({
   markdown,
@@ -41,6 +56,23 @@ export function CourseMarkdown({
             if (href?.startsWith("/"))
               return <Link href={href}>{children}</Link>;
             return <a href={href}>{children}</a>;
+          },
+          td({ node, children }) {
+            const segment = node
+              ? findAudioSegment(contentText(node))
+              : undefined;
+            return (
+              <td>
+                {children}
+                {segment && (
+                  <AudioPlayer
+                    compact
+                    source={segment.source}
+                    text={segment.text}
+                  />
+                )}
+              </td>
+            );
           },
           table({ children }) {
             return (

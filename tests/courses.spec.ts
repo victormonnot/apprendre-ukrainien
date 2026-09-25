@@ -179,7 +179,7 @@ test("prints the complete course and tables without navigation or clipped contai
   await page.goto(documentPath("cours"));
   const article = page.locator("article.prose");
   const hideWorkspaces = await page.addStyleTag({
-    content: ".exercise-workspace { display: none !important; }",
+    content: ".exercise-workspace, .audio-player { display: none !important; }",
   });
   const screenText = (await article.innerText()).replace(/\s+/g, " ").trim();
   await hideWorkspaces.evaluate((element) =>

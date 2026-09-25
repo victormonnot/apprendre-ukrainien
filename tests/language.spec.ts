@@ -116,7 +116,7 @@ test.describe("language workshop", () => {
     });
     await page.goto("/parcours/01/vocabulaire");
     await page
-      .locator(".prose td")
+      .locator(".prose td [lang=uk]")
       .filter({ hasText: /^кава$/ })
       .first()
       .evaluate((element) => {

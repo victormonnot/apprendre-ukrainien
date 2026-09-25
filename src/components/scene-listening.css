@@ -1,0 +1,70 @@
+.scene-listening {
+  min-width: 0;
+}
+.scene-listening h3 {
+  margin-top: 0;
+}
+.scene-listening-note,
+.scene-conversation-controls p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.scene-listening-modes,
+.scene-repeat-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.scene-listening button,
+.scene-repeat-settings select {
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.scene-listening button:focus-visible,
+.scene-repeat-settings select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.scene-listening-modes button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.scene-listening .scene-listening-start {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.scene-listening .scene-listening-start:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.scene-listening-current {
+  margin: 1rem 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.scene-listening-current span {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--text);
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+.scene-repeat-settings label {
+  font-size: 0.85rem;
+}
+@media print {
+  .scene-listening {
+    display: none !important;
+  }
+}

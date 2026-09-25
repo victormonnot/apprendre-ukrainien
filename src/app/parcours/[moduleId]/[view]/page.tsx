@@ -86,7 +86,9 @@ export default async function CourseDocumentPage({ params }: PageProps) {
       {(view === "cours" || view === "vocabulaire") && (
         <p className="document-review-link">
           Pour retrouver ce que tu viens d’étudier :{" "}
-          <Link href="/revisions">choisir mes éléments à réviser</Link>.
+          <Link href="/revisions">choisir mes éléments à réviser</Link> ou{" "}
+          <Link href="/studio">écouter et répéter dans le studio</Link>, puis{" "}
+          <Link href="/cafe">retrouver ces expressions au café</Link>.
         </p>
       )}
       <details className="mobile-toc">

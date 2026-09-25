@@ -1,5 +1,6 @@
 "use client";
 
+import { AudioPlayer } from "@/components/audio-player";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -468,6 +469,13 @@ function Workshop({ query }: { query: string }) {
                   <Markdown skipHtml rehypePlugins={[rehypeUkrainianLanguage]}>
                     {reference.details}
                   </Markdown>
+                  {reference.kind !== "letter" && (
+                    <AudioPlayer
+                      compact
+                      source={{ kind: "reference", elementId: reference.id }}
+                      text={reference.label}
+                    />
+                  )}
                   <div className="language-actions">
                     <button
                       className="button button-secondary"
@@ -666,6 +674,16 @@ function Workshop({ query }: { query: string }) {
               className="language-entry"
             >
               <h3 lang="uk">{entry.ukrainian}</h3>
+              <AudioPlayer
+                compact
+                source={{
+                  kind: "language",
+                  resultId: result.id,
+                  entryIndex: index,
+                  exampleIndex: null,
+                }}
+                text={entry.ukrainian}
+              />
               <p className="language-meaning">{entry.french}</p>
               <p>{entry.usage}</p>
               {entry.syllables.length > 0 && (
@@ -705,6 +723,16 @@ function Workshop({ query }: { query: string }) {
                   {entry.examples.map((example, exampleIndex) => (
                     <li key={exampleIndex}>
                       <p lang="uk">{example.ukrainian}</p>
+                      <AudioPlayer
+                        compact
+                        source={{
+                          kind: "language",
+                          resultId: result.id,
+                          entryIndex: index,
+                          exampleIndex,
+                        }}
+                        text={example.ukrainian}
+                      />
                       <p>{example.french}</p>
                     </li>
                   ))}

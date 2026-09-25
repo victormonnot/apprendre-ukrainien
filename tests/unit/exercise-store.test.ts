@@ -474,7 +474,7 @@ test("exercise migration preserves existing notes, checkpoints and learning hist
   assert.equal(
     inspected.prepare("SELECT count(*) AS count FROM schema_migrations").get()
       ?.count,
-    4,
+    6,
   );
 });
 
