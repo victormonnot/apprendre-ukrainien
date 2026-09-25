@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,19 +18,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a className="skip-link" href="#main-content">
           Aller au contenu
         </a>
-        <header className="site-header">
-          <Link
-            className="brand"
-            href="/"
-            aria-label="Apprendre l’ukrainien, accueil"
-          >
-            <span className="brand-mark" aria-hidden="true">
-              У
-            </span>
-            Apprendre l’ukrainien
-          </Link>
-        </header>
-        {children}
+        <AppSidebar />
+        <div className="workspace">{children}</div>
       </body>
     </html>
   );

@@ -11,6 +11,8 @@ export default defineConfig([
     ".next/**",
     "out/**",
     "coverage/**",
+    "test-results/**",
+    "playwright-report/**",
     "data/**",
     "backups/**",
     "uploads/**",
