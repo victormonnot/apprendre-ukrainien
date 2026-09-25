@@ -1,9 +1,4 @@
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "./fixtures";
 import {
   NOTE_MAX_LENGTH,
   REPORT_MAX_LENGTH,

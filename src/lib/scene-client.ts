@@ -1,3 +1,4 @@
+import { appFetch, WorkspaceClientError } from "./workspace-client";
 import type { SceneCommand, SceneRoleId, SceneWorkspace } from "./scene-types";
 
 export class SceneRequestError extends Error {
@@ -15,12 +16,16 @@ async function requestScene(
 ): Promise<SceneWorkspace> {
   let response: Response;
   try {
-    response = await fetch(`/api/scenes${query}`, {
+    response = await appFetch(`/api/scenes${query}`, {
       ...init,
       cache: "no-store",
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
+    if (
+      error instanceof WorkspaceClientError ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
     throw new SceneRequestError(
       0,
       "L’application est injoignable. Tes réponses restent ici ; tu peux réessayer.",

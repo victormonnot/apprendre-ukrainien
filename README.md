@@ -338,6 +338,47 @@ ouvrent la même application. Elle écoute uniquement sur l’interface locale e
 réserve l’API personnelle aux requêtes locales de même origine. L’authentification,
 l’accès distant et la synchronisation entre appareils restent à ajouter.
 
+### Sauvegardes et restauration
+
+**Mes données** permet de créer une sauvegarde complète, de la télécharger,
+puis de vérifier un fichier avant de le restaurer. Les copies contiennent le
+profil, les notes, les bilans, les brouillons enregistrés, les remises, les
+révisions et leurs échéances, les fiches de l’atelier, les essais au café, les
+repères de la médiathèque et les sons conservés. Les clés API, les préférences du
+navigateur, les saisies non enregistrées et les médias externes n’en font pas
+partie.
+
+Les fichiers `.sqlite3` restent dans le répertoire privé
+`APP_DATA_DIR/backups` (ou `.data/backups` par défaut). Télécharger une copie et
+la conserver sur un autre support permet de se protéger d’une perte de
+l’ordinateur. Le fichier contient des données personnelles en clair.
+
+La vérification affiche un aperçu des données du fichier sans remplacer le
+travail actuel. Cette version accepte les sauvegardes ayant exactement le schéma
+et les migrations de la version installée, jusqu’à **256 Mio**. Elle vérifie
+l’intégrité SQLite, les contraintes et les relations entre tables ; un fichier
+modifié manuellement n’est pas une méthode d’import de contenu. Les préparations
+expirent après une heure, avec cinq fichiers au maximum en attente.
+
+La restauration demande une confirmation explicite et **remplace** l’état
+actuel, sans fusionner les historiques. Une copie de secours est créée avant le
+remplacement ; elle reste téléchargeable et restaurable. Le remplacement est
+transactionnel : un échec avant validation conserve les données précédentes.
+Réessayer après une réponse réseau perdue retrouve le résultat de la même
+opération sans effectuer une seconde restauration.
+
+Après restauration, recharger les autres onglets. Leurs anciennes requêtes ne
+peuvent plus modifier le nouvel état, y compris une génération audio ou textuelle
+encore en cours. À la réouverture, les brouillons de l’ancien état sont mis à
+part dans le même onglet et peuvent être téléchargés depuis **Mes données**.
+Ils ne sont pas réinjectés automatiquement dans le travail restauré. Cet export
+JSON de brouillons sert à consulter et récupérer les textes ; il ne remplace
+pas la sauvegarde complète.
+
+La restauration s’effectue depuis un seul serveur local de l’application. Elle
+ne constitue pas une synchronisation entre appareils et ne publie pas les
+données.
+
 ### Données et migrations
 
 La base est créée au premier accès au suivi dans `.data/learning.sqlite3`, avec

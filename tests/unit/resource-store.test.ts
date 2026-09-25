@@ -529,6 +529,6 @@ test("migration seven preserves previous notes, audio, scene answers and migrati
   assert.equal(
     database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
       .count,
-    7,
+    8,
   );
 });

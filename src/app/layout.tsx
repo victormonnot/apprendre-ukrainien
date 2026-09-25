@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { WorkspaceBoundary } from "@/components/workspace-boundary";
 import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
 import "@/components/learning-progress.css";
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Aller au contenu
         </a>
         <AppSidebar />
-        <div className="workspace">{children}</div>
+        <div className="workspace">
+          <WorkspaceBoundary>{children}</WorkspaceBoundary>
+        </div>
       </body>
     </html>
   );

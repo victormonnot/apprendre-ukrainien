@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "./fixtures";
 import { openAudioStore } from "../src/lib/server/audio-store";
 import { openLearningStore } from "../src/lib/server/learning-store";
 import { describeAudio } from "../src/lib/server/audio-provider";

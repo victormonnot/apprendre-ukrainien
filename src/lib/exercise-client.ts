@@ -1,3 +1,4 @@
+import { appFetch } from "./workspace-client";
 import type { ExerciseCommand, ExerciseWorkspaceState } from "./exercise-types";
 
 export class ExerciseConflictError extends Error {
@@ -18,17 +19,20 @@ async function request(
 ) {
   let response: Response;
   try {
-    response = await fetch(`/api/exercises/${encodeURIComponent(exerciseId)}`, {
-      method: command ? "POST" : "GET",
-      ...(command
-        ? {
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(command),
-          }
-        : {}),
-      cache: "no-store",
-      signal,
-    });
+    response = await appFetch(
+      `/api/exercises/${encodeURIComponent(exerciseId)}`,
+      {
+        method: command ? "POST" : "GET",
+        ...(command
+          ? {
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(command),
+            }
+          : {}),
+        cache: "no-store",
+        signal,
+      },
+    );
   } catch (cause) {
     if (cause instanceof TypeError)
       throw new Error(

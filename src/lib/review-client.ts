@@ -1,3 +1,4 @@
+import { appFetch, WorkspaceClientError } from "./workspace-client";
 import type { ReviewCommand, ReviewOverview } from "./review-types";
 
 export class ReviewRequestError extends Error {
@@ -12,9 +13,13 @@ export class ReviewRequestError extends Error {
 async function requestReviews(init: RequestInit): Promise<ReviewOverview> {
   let response: Response;
   try {
-    response = await fetch("/api/reviews", { ...init, cache: "no-store" });
+    response = await appFetch("/api/reviews", { ...init, cache: "no-store" });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
+    if (
+      error instanceof WorkspaceClientError ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
     throw new ReviewRequestError(
       0,
       "L’application est injoignable. Conserve ta réponse et réessaie.",

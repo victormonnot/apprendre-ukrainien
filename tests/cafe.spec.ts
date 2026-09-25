@@ -4,7 +4,7 @@ import {
   type APIRequestContext,
   type Locator,
   type Page,
-} from "@playwright/test";
+} from "./fixtures";
 import { randomUUID } from "node:crypto";
 import type {
   SceneCommand,

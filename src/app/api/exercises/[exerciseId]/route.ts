@@ -17,6 +17,7 @@ import {
   json,
   readLocalJson,
   requireLocalRequest,
+  requireWorkspaceGeneration,
 } from "@/lib/server/local-request";
 
 export const runtime = "nodejs";
@@ -170,6 +171,7 @@ export async function POST(request: Request, context: RouteContext) {
     const definition = getExercise(exerciseId);
     if (!definition) throw new RequestError("Cet exercice n’existe pas.", 404);
     const command = validateCommand(await readLocalJson(request), definition);
+    requireWorkspaceGeneration(request);
     const userId = getLearningStore().getLocalUserId();
     const store = getExerciseStore();
     if (command.type === "start")

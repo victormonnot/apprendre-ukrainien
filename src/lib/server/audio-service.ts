@@ -17,6 +17,12 @@ import {
 import { resolveAudioText } from "./audio-input";
 import { getLanguageStore } from "./language-service";
 import { getReviewStore } from "./review-service";
+import { RequestError } from "./local-request";
+import {
+  assertWorkspaceGeneration,
+  getWorkspaceGeneration,
+  WorkspaceChangedError,
+} from "./workspace-generation";
 
 const state = globalThis as typeof globalThis & {
   audioStore?: ReturnType<typeof openAudioStore>;
@@ -41,6 +47,7 @@ export async function requestAudio(
   source: AudioSource,
   voiceId: AudioVoiceId,
 ): Promise<AudioClip> {
+  const generation = getWorkspaceGeneration();
   const text = resolveAudioText(source, {
     getResult: (id) => getLanguageStore().getResult(userId, id),
     getActiveReview: () => getReviewStore().getOverview(userId).active,
@@ -51,12 +58,13 @@ export async function requestAudio(
   if (cached) return cached;
   state.audioRequests ??= new Map();
   state.audioCalls ??= new Map();
-  const key = `${userId}:${createHash("sha256").update(JSON.stringify(descriptor)).digest("hex")}`;
+  const owner = `${generation}:${userId}`;
+  const key = `${owner}:${createHash("sha256").update(JSON.stringify(descriptor)).digest("hex")}`;
   const pending = state.audioRequests.get(key);
   if (pending) return pending;
   if (
     [...state.audioRequests.keys()].some((entry) =>
-      entry.startsWith(`${userId}:`),
+      entry.startsWith(`${owner}:`),
     )
   )
     throw new AudioProviderError(
@@ -64,7 +72,7 @@ export async function requestAudio(
       429,
     );
   const now = Date.now();
-  const recent = (state.audioCalls.get(userId) ?? []).filter(
+  const recent = (state.audioCalls.get(owner) ?? []).filter(
     (time) => now - time < 60_000,
   );
   if (recent.length >= 12)
@@ -74,19 +82,26 @@ export async function requestAudio(
     );
   const promise = (async () => {
     const voices = await audioVoices();
+    assertWorkspaceGeneration(generation);
     if (!voices.find((voice) => voice.id === voiceId)?.available)
       throw new AudioProviderError(
         "Cette voix ne peut pas créer ce son pour le moment. Choisis une voix disponible ; les sons déjà créés restent lisibles.",
         503,
       );
-    state.audioCalls!.set(userId, [...recent, now]);
+    state.audioCalls!.set(owner, [...recent, now]);
     const result = await synthesizeAudio(descriptor);
+    assertWorkspaceGeneration(generation);
     return store.saveClip(userId, descriptor, result.bytes, result.mimeType);
-  })();
+  })().catch((error: unknown) => {
+    if (error instanceof WorkspaceChangedError)
+      throw new RequestError(error.message, error.status);
+    throw error;
+  });
   state.audioRequests.set(key, promise);
   try {
     return await promise;
   } finally {
-    state.audioRequests.delete(key);
+    if (state.audioRequests.get(key) === promise)
+      state.audioRequests.delete(key);
   }
 }

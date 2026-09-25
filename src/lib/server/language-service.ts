@@ -15,6 +15,11 @@ import {
 import { generateLanguageResult } from "./language-provider";
 import { RequestError } from "./local-request";
 import { submittedLanguageInput } from "./language-input";
+import {
+  assertWorkspaceGeneration,
+  getWorkspaceGeneration,
+  WorkspaceChangedError,
+} from "./workspace-generation";
 
 const state = globalThis as typeof globalThis & {
   languageStore?: ReturnType<typeof openLanguageStore>;
@@ -88,6 +93,7 @@ export async function requestLanguageResult(
   requestId: string,
   input: LanguageInput,
 ) {
+  const generation = getWorkspaceGeneration();
   const store = getLanguageStore();
   const serialized = languageInputKey(input);
   const existing = store.getByRequestId(userId, requestId);
@@ -98,7 +104,8 @@ export async function requestLanguageResult(
   }
   state.languageRequests ??= new Map();
   state.languageCalls ??= new Map();
-  const key = `${userId}:${requestId}`;
+  const owner = `${generation}:${userId}`;
+  const key = `${owner}:${requestId}`;
   const current = state.languageRequests.get(key);
   if (current) {
     if (current.input !== serialized) throw new LanguageRequestConflictError();
@@ -106,7 +113,7 @@ export async function requestLanguageResult(
   }
   if (
     [...state.languageRequests.keys()].some((value) =>
-      value.startsWith(`${userId}:`),
+      value.startsWith(`${owner}:`),
     )
   )
     throw new RequestError(
@@ -114,7 +121,7 @@ export async function requestLanguageResult(
       429,
     );
   const now = Date.now();
-  const recent = (state.languageCalls.get(userId) ?? []).filter(
+  const recent = (state.languageCalls.get(owner) ?? []).filter(
     (time) => now - time < 60_000,
   );
   if (recent.length >= 4)
@@ -122,15 +129,21 @@ export async function requestLanguageResult(
       "Plusieurs demandes viennent d’être envoyées. Réessaie dans une minute.",
       429,
     );
-  if (languageConfigured()) state.languageCalls.set(userId, [...recent, now]);
+  if (languageConfigured()) state.languageCalls.set(owner, [...recent, now]);
   const promise = (async () => {
     const generated = await generateLanguageResult(input);
+    assertWorkspaceGeneration(generation);
     return store.recordResult(userId, { requestId, input, ...generated });
-  })();
+  })().catch((error: unknown) => {
+    if (error instanceof WorkspaceChangedError)
+      throw new RequestError(error.message, error.status);
+    throw error;
+  });
   state.languageRequests.set(key, { input: serialized, promise });
   try {
     return await promise;
   } finally {
-    state.languageRequests.delete(key);
+    if (state.languageRequests.get(key)?.promise === promise)
+      state.languageRequests.delete(key);
   }
 }

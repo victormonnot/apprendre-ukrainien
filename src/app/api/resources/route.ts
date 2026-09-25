@@ -18,6 +18,7 @@ import {
   json,
   readLocalJson,
   requireLocalRequest,
+  requireWorkspaceGeneration,
 } from "@/lib/server/local-request";
 
 export const runtime = "nodejs";
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
   try {
     requireLocalRequest(request, true);
     const command = validateResourceCommand(await readLocalJson(request));
+    requireWorkspaceGeneration(request);
     const resource = requireResource(command.resourceId);
     return json(
       getResourceStore().applyCommand(

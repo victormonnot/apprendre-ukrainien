@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { cafeScenes } from "../src/content/scenes";
 import { describeAudio } from "../src/lib/server/audio-provider";
 import { openAudioStore } from "../src/lib/server/audio-store";

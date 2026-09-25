@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { appFetch, WorkspaceClientError } from "@/lib/workspace-client";
 import type { ExerciseAssessment } from "@/lib/exercise-types";
 
 type Summary = {
@@ -24,7 +25,7 @@ export function ExerciseOverview({ moduleId }: { moduleId: string }) {
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/exercises?moduleId=${encodeURIComponent(moduleId)}`, {
+    appFetch(`/api/exercises?moduleId=${encodeURIComponent(moduleId)}`, {
       cache: "no-store",
       signal: controller.signal,
     })
@@ -36,9 +37,13 @@ export function ExerciseOverview({ moduleId }: { moduleId: string }) {
         setSummaries(value.exercises);
         setError("");
       })
-      .catch(() => {
+      .catch((failure: unknown) => {
         if (!controller.signal.aborted)
-          setError("Le suivi des exercices est indisponible.");
+          setError(
+            failure instanceof WorkspaceClientError
+              ? failure.message
+              : "Le suivi des exercices est indisponible.",
+          );
       });
     return () => controller.abort();
   }, [moduleId, retry]);

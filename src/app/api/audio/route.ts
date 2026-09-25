@@ -10,6 +10,7 @@ import {
   json,
   readLocalJson,
   requireLocalRequest,
+  requireWorkspaceGeneration,
 } from "@/lib/server/local-request";
 
 export const runtime = "nodejs";
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     const { source, voiceId } = validateAudioCommand(
       await readLocalJson(request),
     );
+    requireWorkspaceGeneration(request);
     return json(
       await requestAudio(getLearningStore().getLocalUserId(), source, voiceId),
     );

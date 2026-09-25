@@ -12,6 +12,7 @@ import {
   RequestError,
   json,
   requireLocalRequest,
+  requireWorkspaceGeneration,
   readLocalJson,
 } from "@/lib/server/local-request";
 
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
   try {
     requireLocalRequest(request, true);
     const command = await readCommand(request);
+    requireWorkspaceGeneration(request);
     const store = getLearningStore();
     const userId = store.getLocalUserId();
     const { moduleId, view } = command;

@@ -1,3 +1,4 @@
+import { appFetch, WorkspaceClientError } from "./workspace-client";
 import type { ResourceCommand, ResourceWorkspace } from "./resource-types";
 
 export class ResourceRequestError extends Error {
@@ -17,12 +18,16 @@ async function requestResource<T>(
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/resources${query}`, {
+    response = await appFetch(`/api/resources${query}`, {
       ...init,
       cache: "no-store",
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
+    if (
+      error instanceof WorkspaceClientError ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
     throw new ResourceRequestError(
       0,
       "L’application est injoignable. Tes notes restent ici ; tu peux réessayer.",

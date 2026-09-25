@@ -6,7 +6,7 @@ test-results/
 playwright-report/
 data/
 .data/
-backups/
+/backups/
 uploads/
 .local/
 .vercel/

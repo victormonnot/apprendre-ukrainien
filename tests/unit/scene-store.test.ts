@@ -499,6 +499,6 @@ test("migration six preserves earlier data, audio bytes and migration checksums"
   assert.equal(
     database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
       .count,
-    7,
+    8,
   );
 });

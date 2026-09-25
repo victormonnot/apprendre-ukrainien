@@ -1,9 +1,4 @@
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "./fixtures";
 import { randomUUID } from "node:crypto";
 import { getResource } from "../src/content/resources";
 import type {

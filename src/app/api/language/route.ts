@@ -23,6 +23,7 @@ import {
   json,
   readLocalJson,
   requireLocalRequest,
+  requireWorkspaceGeneration,
 } from "@/lib/server/local-request";
 
 export const runtime = "nodejs";
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
   try {
     requireLocalRequest(request, true);
     const body = await readLocalJson(request);
+    requireWorkspaceGeneration(request);
     const keys = Object.keys(body).sort().join(",");
     const userId = getLearningStore().getLocalUserId();
     if (body.type === "generate" && keys === "input,requestId,type") {
@@ -116,6 +118,7 @@ export async function POST(request: Request) {
         userId,
         validateLanguageInput(body.input),
       );
+      requireWorkspaceGeneration(request);
       return json(await requestLanguageResult(userId, body.requestId, input));
     }
     if (

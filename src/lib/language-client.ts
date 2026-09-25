@@ -1,3 +1,4 @@
+import { appFetch, WorkspaceClientError } from "./workspace-client";
 import type {
   LanguageInput,
   LanguageLibrary,
@@ -25,12 +26,16 @@ async function requestLanguage<T>(
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`/api/language${query}`, {
+    response = await appFetch(`/api/language${query}`, {
       ...init,
       cache: "no-store",
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
+    if (
+      error instanceof WorkspaceClientError ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
     throw new LanguageRequestError(
       0,
       "L’application est injoignable. Ton texte reste ici ; tu peux réessayer.",

@@ -1,3 +1,4 @@
+import { appFetch } from "./workspace-client";
 import type {
   LearningCommand,
   LearningDocumentState,
@@ -31,7 +32,7 @@ async function readResponse<T>(response: Response): Promise<T> {
 
 export async function loadLearning(signal?: AbortSignal) {
   return readResponse<LearningOverview>(
-    await fetch("/api/learning", { cache: "no-store", signal }).catch(
+    await appFetch("/api/learning", { cache: "no-store", signal }).catch(
       networkError,
     ),
   );
@@ -39,7 +40,7 @@ export async function loadLearning(signal?: AbortSignal) {
 
 export async function updateLearning(command: LearningCommand) {
   return readResponse<LearningDocumentState>(
-    await fetch("/api/learning", {
+    await appFetch("/api/learning", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(command),

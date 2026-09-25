@@ -12,6 +12,7 @@ const items = [
   { href: "/cafe", label: "Le café", symbol: "☕" },
   { href: "/ressources", label: "Médiathèque", symbol: "▷" },
   { href: "/revisions", label: "Révisions", symbol: "↻" },
+  { href: "/donnees", label: "Mes données", symbol: "↓" },
 ];
 
 export function AppSidebar() {

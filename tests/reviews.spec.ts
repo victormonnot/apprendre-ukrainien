@@ -4,7 +4,7 @@ import {
   type APIRequestContext,
   type Locator,
   type Page,
-} from "@playwright/test";
+} from "./fixtures";
 import type { ReviewCommand, ReviewOverview } from "../src/lib/review-types";
 
 const endpoint = "/api/reviews";

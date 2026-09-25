@@ -1,3 +1,4 @@
+import { appFetch, WorkspaceClientError } from "./workspace-client";
 import type {
   AudioCatalogue,
   AudioClip,
@@ -17,9 +18,13 @@ export class AudioRequestError extends Error {
 async function request<T>(init: RequestInit = {}): Promise<T> {
   let response: Response;
   try {
-    response = await fetch("/api/audio", { ...init, cache: "no-store" });
+    response = await appFetch("/api/audio", { ...init, cache: "no-store" });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") throw error;
+    if (
+      error instanceof WorkspaceClientError ||
+      (error instanceof Error && error.name === "AbortError")
+    )
+      throw error;
     throw new AudioRequestError(
       0,
       "Le service audio est injoignable. Tu peux réessayer.",
