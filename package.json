@@ -1,0 +1,46 @@
+{
+  "name": "apprendre-ukrainien",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Application d’apprentissage de l’ukrainien en français.",
+  "packageManager": "npm@11.17.0",
+  "engines": {
+    "node": "^24.21.0 || ^26.4.0",
+    "npm": "11.17.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "version": "11.17.0",
+      "onFail": "error"
+    }
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "next typegen && tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck"
+  },
+  "dependencies": {
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
+  }
+}

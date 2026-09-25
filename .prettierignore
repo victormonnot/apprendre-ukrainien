@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+coverage/
+data/
+backups/
+uploads/
+.local/
+.vercel/
+.env
+.env.*
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo
