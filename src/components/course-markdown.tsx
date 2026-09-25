@@ -1,13 +1,21 @@
 import Link from "next/link";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { getExerciseByNumber } from "@/content/exercises";
+import { ExerciseWorkspace } from "@/components/exercise-workspace";
 import {
   rehypeExerciseSections,
   rehypeUkrainianLanguage,
   remarkHeadingIds,
 } from "@/lib/markdown";
 
-export function CourseMarkdown({ markdown }: { markdown: string }) {
+export function CourseMarkdown({
+  markdown,
+  moduleId,
+}: {
+  markdown: string;
+  moduleId: string;
+}) {
   return (
     <article className="prose">
       <Markdown
@@ -15,6 +23,20 @@ export function CourseMarkdown({ markdown }: { markdown: string }) {
         remarkPlugins={[remarkGfm, remarkHeadingIds]}
         rehypePlugins={[rehypeExerciseSections, rehypeUkrainianLanguage]}
         components={{
+          section({ node, children }) {
+            const exercise = getExerciseByNumber(
+              moduleId,
+              Number(node?.properties.dataExerciseNumber),
+            );
+            return (
+              <section className="exercise-block">
+                <div className="exercise-instructions">{children}</div>
+                {exercise && (
+                  <ExerciseWorkspace key={exercise.id} definition={exercise} />
+                )}
+              </section>
+            );
+          },
           a({ href, children }) {
             if (href?.startsWith("/"))
               return <Link href={href}>{children}</Link>;

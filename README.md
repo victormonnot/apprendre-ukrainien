@@ -3,15 +3,18 @@
 Application web pour apprendre l’ukrainien en français.
 
 Le premier module propose un cours complet, une fiche de vocabulaire et une fiche
-d’exercices sur papier. Les trois supports partagent une navigation, un sommaire
+d’exercices à réaliser dans l’application ou sur papier. Les trois supports partagent une navigation, un sommaire
 et une mise en page d’impression, sur ordinateur et téléphone.
 
 Chaque support possède un point de reprise, une note personnelle et un bilan de
 travail déclaratif. Ces données sont conservées dans une base SQLite locale.
 Une consultation n’attribue aucun résultat d’apprentissage.
 
-La remise des réponses, leur correction et l’audio intégré ne sont pas encore
-disponibles.
+Les treize exercices permettent d’enregistrer un brouillon, de remettre ses
+réponses puis de réessayer en conservant les tentatives précédentes. Les réponses
+écrites vérifiables reçoivent une correction automatique ; les productions libres
+et variantes non reconnues restent à vérifier. L’audio intégré et l’assistance IA
+ne sont pas encore disponibles.
 
 ## Prérequis
 
@@ -36,15 +39,15 @@ Les éventuels réglages locaux pourront être placés dans `.env.local` ;
 
 ## Commandes
 
-| Commande           | Usage                                                                 |
-| ------------------ | --------------------------------------------------------------------- |
-| `npm run dev`      | Démarrer le serveur de développement local.                           |
-| `npm run check`    | Vérifier le formatage, le lint et les types.                          |
-| `npm run format`   | Formater les fichiers source et de configuration.                     |
-| `npm run build`    | Compiler l’application pour la production.                            |
-| `npm start`        | Servir localement la compilation de production.                       |
-| `npm run test:e2e` | Vérifier la navigation et les supports avec Chromium.                 |
-| `npm test`         | Vérifier le stockage, les migrations et les identifiants de sections. |
+| Commande           | Usage                                                                   |
+| ------------------ | ----------------------------------------------------------------------- |
+| `npm run dev`      | Démarrer le serveur de développement local.                             |
+| `npm run check`    | Vérifier le formatage, le lint et les types.                            |
+| `npm run format`   | Formater les fichiers source et de configuration.                       |
+| `npm run build`    | Compiler l’application pour la production.                              |
+| `npm start`        | Servir localement la compilation de production.                         |
+| `npm run test:e2e` | Vérifier la navigation, les exercices et les sauvegardes avec Chromium. |
+| `npm test`         | Vérifier le stockage, les migrations, les corrections et les ancres.    |
 
 Avant de proposer une modification :
 
@@ -67,6 +70,8 @@ npm run test:e2e
 Les tests compilent l’application et démarrent un serveur de production local sur
 le port 3101, qui doit être libre. Ils couvrent les affichages ordinateur et mobile,
 les ancres, la cohérence des exercices, l’impression et la sauvegarde du travail.
+Ils vérifient aussi les remises, les réessais, les conflits entre onglets et
+la validation des requêtes.
 Une base temporaire distincte est utilisée pour chaque lancement des tests : les
 données personnelles ne sont pas modifiées.
 
@@ -82,6 +87,31 @@ Si deux onglets modifient la même note, l’application conserve le brouillon e
 demande de comparer les versions avant de remplacer celle qui est enregistrée.
 Un brouillon temporaire peut être retrouvé dans le même onglet ; il ne remplace
 pas l’enregistrement dans la base.
+
+### Exercices et corrections
+
+Sous un exercice, ouvrir **Répondre dans l’application**, puis **Commencer
+l’exercice**. Indiquer ses réponses et l’aide utilisée pour chaque question.
+Le brouillon peut être enregistré incomplet ; la remise demande toutes les
+réponses et leurs conditions de réalisation. Un travail sur papier peut être
+recopié dans ces champs. Les exercices communs au cours et à la fiche partagent
+les mêmes réponses et le même historique.
+
+La correction n’apparaît qu’après remise. Elle distingue les réponses justes,
+celles à reprendre et celles qui demandent une vérification. Une variante
+inconnue n’est pas automatiquement considérée comme fausse. Les textes libres,
+les explications et la prononciation ne sont pas évalués automatiquement dans
+cette version ; aucune correction différée n’est programmée. Une réussite ne
+modifie pas automatiquement le bilan personnel et ne vaut pas maîtrise.
+
+**Réessayer l’exercice** ouvre une tentative vierge. Les réponses, l’aide déclarée
+et la correction de chaque remise restent conservées avec la version de
+l’exercice. En cas de conflit entre onglets, les réponses locales sont affichées
+à côté de la version enregistrée pour pouvoir les récupérer. Le parcours indique
+les brouillons et les remises disponibles. Les supports imprimés restent sans
+réponses personnelles ni corrections.
+
+### Profil local
 
 Cette version utilise un seul profil local, partagé par les navigateurs qui
 ouvrent la même application. Elle écoute uniquement sur l’interface locale et
@@ -103,20 +133,23 @@ Le stockage utilise le module `node:sqlite` fourni par Node.js, sans service de
 base de données externe.
 
 Les données sont rattachées à un identifiant de profil généré côté serveur. Les
-visites, points de reprise et bilans conservent un historique ; le texte des notes
+visites, points de reprise, bilans et opérations sur les exercices conservent un historique ; le texte des notes
 est stocké séparément avec une révision pour détecter les modifications
 concurrentes. Les contenus pédagogiques ne contiennent aucune donnée personnelle.
+Les remises et leurs corrections sont immuables en base. Les brouillons sont
+protégés par une révision pour éviter qu’un onglet remplace silencieusement le
+travail d’un autre.
 
 ## Structure
 
 ```text
 src/app/             Routes, styles et métadonnées de l’application
-src/components/      Navigation et lecture des documents
-src/content/         Catalogue et supports pédagogiques en Markdown
-src/lib/             Chargement et préparation des documents
-src/lib/server/      Stockage local et accès aux données personnelles
+src/components/      Lecture, exercices et suivi personnel
+src/content/         Catalogue, supports Markdown et définitions des exercices
+src/lib/             Préparation des documents et échanges avec les API
+src/lib/server/      Stockage local et correction des réponses
 migrations/          Évolutions versionnées du schéma SQLite
-tests/               Parcours de navigation et d’impression
+tests/               Tests unitaires et parcours navigateur
 .github/workflows/   Vérifications automatisées
 ```
 
@@ -137,6 +170,15 @@ Les sections de niveau 2 portent un identifiant explicite, par exemple
 changement de titre ou de position pour préserver les points de reprise. Les
 notes sont reliées au numéro de module et au type de support, indépendamment des
 titres et du contenu du cours.
+
+Les exercices portent eux aussi une ancre stable (`{#exercice-1}`, etc.). Leurs
+questions et champs sont définis dans `src/content/exercises.ts` ; les réponses
+attendues restent dans le correcteur serveur. Conserver les identifiants lors
+des évolutions et augmenter la version si les questions ou leur sens changent.
+Chaque tentative conserve sa définition afin que les anciennes réponses restent
+lisibles. Un brouillon d’une ancienne version est préservé mais ne peut pas être
+remis selon les nouvelles questions ; sa reprise doit être prévue lors d’un
+changement de contenu.
 
 Les liens entre supports utilisent les routes `/parcours/01/cours`,
 `/parcours/01/vocabulaire` et `/parcours/01/exercices`. Les ressources externes sont

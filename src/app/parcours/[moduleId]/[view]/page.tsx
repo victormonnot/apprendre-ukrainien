@@ -59,7 +59,7 @@ export default async function CourseDocumentPage({ params }: PageProps) {
             ? module.title
             : document.label === "Vocabulaire"
               ? "Vocabulaire et usages"
-              : "Exercices sur papier"}
+              : "Exercices et corrections"}
         </h1>
         <p className="page-description">
           {view === "cours" ? module.description : module.title}
@@ -88,7 +88,7 @@ export default async function CourseDocumentPage({ params }: PageProps) {
       </details>
       <div className="reader-layout">
         <div className="reading-sheet">
-          <CourseMarkdown markdown={markdown} />
+          <CourseMarkdown markdown={markdown} moduleId={module.id} />
           <footer className="document-footer">
             <span>
               Module {module.id} · {document.label}

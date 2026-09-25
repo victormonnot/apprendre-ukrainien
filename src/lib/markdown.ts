@@ -74,12 +74,17 @@ export function rehypeExerciseSections() {
         exercise = undefined;
         if (
           node.tagName === "h3" &&
-          /^exercice-\d+-/.test(String(node.properties.id))
+          /^exercice-\d+(?:-|$)/.test(String(node.properties.id))
         ) {
           exercise = {
             type: "element",
             tagName: "section",
-            properties: { className: ["exercise-block"] },
+            properties: {
+              className: ["exercise-block"],
+              dataExerciseNumber: String(node.properties.id).match(
+                /^exercice-(\d+)/,
+              )?.[1],
+            },
             children: [],
           };
           children.push(exercise);

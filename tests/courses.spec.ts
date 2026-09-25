@@ -11,27 +11,29 @@ function documentPath(slug: string) {
 }
 
 async function exerciseSections(page: Page) {
-  return page.locator("article.prose h3").evaluateAll((headings) => {
-    const exercises: Record<string, string> = {};
+  return page
+    .locator("article.prose .exercise-instructions h3")
+    .evaluateAll((headings) => {
+      const exercises: Record<string, string> = {};
 
-    for (const heading of headings) {
-      const match = heading.textContent?.match(/^Exercice\s+(\d+)\s*[—–-]/);
-      const number = match?.[1];
-      if (!number) continue;
+      for (const heading of headings) {
+        const match = heading.textContent?.match(/^Exercice\s+(\d+)\s*[—–-]/);
+        const number = match?.[1];
+        if (!number) continue;
 
-      const parts = [heading.textContent ?? ""];
-      let sibling = heading.nextElementSibling;
+        const parts = [heading.textContent ?? ""];
+        let sibling = heading.nextElementSibling;
 
-      while (sibling && !/^H[1-3]$/.test(sibling.tagName)) {
-        parts.push(sibling.textContent ?? "");
-        sibling = sibling.nextElementSibling;
+        while (sibling && !/^H[1-3]$/.test(sibling.tagName)) {
+          parts.push(sibling.textContent ?? "");
+          sibling = sibling.nextElementSibling;
+        }
+
+        exercises[number] = parts.join(" ").replace(/\s+/g, " ").trim();
       }
 
-      exercises[number] = parts.join(" ").replace(/\s+/g, " ").trim();
-    }
-
-    return exercises;
-  });
+      return exercises;
+    });
 }
 
 test("opens the module and moves between its three connected documents", async ({
@@ -68,7 +70,7 @@ test("contents links address unique, stable headings in every document", async (
 }) => {
   for (const document of documents) {
     await page.goto(documentPath(document.slug));
-    const headings = page.locator("article.prose h2, article.prose h3");
+    const headings = page.locator("article.prose h2, article.prose h3[id]");
     const ids = await headings.evaluateAll((elements) =>
       elements.map((element) => element.id),
     );
@@ -176,7 +178,13 @@ test("prints the complete course and tables without navigation or clipped contai
 }) => {
   await page.goto(documentPath("cours"));
   const article = page.locator("article.prose");
+  const hideWorkspaces = await page.addStyleTag({
+    content: ".exercise-workspace { display: none !important; }",
+  });
   const screenText = (await article.innerText()).replace(/\s+/g, " ").trim();
+  await hideWorkspaces.evaluate((element) =>
+    element.parentNode?.removeChild(element),
+  );
 
   await page.evaluate(() => {
     window.print = () => {
@@ -191,9 +199,13 @@ test("prints the complete course and tables without navigation or clipped contai
 
   await page.emulateMedia({ media: "print" });
   await expect(article).toBeVisible();
+  await expect(article.locator(".exercise-workspace").first()).toBeHidden();
   expect((await article.innerText()).replace(/\s+/g, " ").trim()).toBe(
     screenText,
   );
+  for (const block of await article.locator(".exercise-instructions").all()) {
+    await expect(block.locator("h3")).toBeVisible();
+  }
   await expect(page.getByRole("button", { name: /Imprimer/ })).toHaveCount(0);
   await expect(page.getByRole("navigation")).toHaveCount(0);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { useUnsavedWork } from "@/lib/use-unsaved-work";
 import { NoteConflictError } from "@/lib/learning-client";
 import {
   NOTE_MAX_LENGTH,
@@ -186,58 +187,7 @@ export function LearningNotebook({
     savedReport,
   ]);
 
-  useEffect(() => {
-    if (!dirty) return;
-
-    function beforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    function beforeLinkNavigation(event: MouseEvent) {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      ) {
-        return;
-      }
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const link = target.closest<HTMLAnchorElement>("a[href]");
-      if (!link || link.hasAttribute("download")) return;
-      if (link.target && link.target !== "_self") return;
-
-      const destination = new URL(link.href, window.location.href);
-      if (destination.origin !== window.location.origin) return;
-      if (
-        destination.pathname === window.location.pathname &&
-        destination.search === window.location.search
-      ) {
-        return;
-      }
-      if (!["http:", "https:"].includes(destination.protocol)) return;
-
-      if (
-        !window.confirm(
-          "Ton carnet contient un brouillon non enregistré. Quitter cette fiche sans enregistrer les modifications ?",
-        )
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-
-    window.addEventListener("beforeunload", beforeUnload);
-    document.addEventListener("click", beforeLinkNavigation, true);
-    return () => {
-      window.removeEventListener("beforeunload", beforeUnload);
-      document.removeEventListener("click", beforeLinkNavigation, true);
-    };
-  }, [dirty]);
+  useUnsavedWork(dirty);
 
   async function saveNote(expectedRevision = savedNote.revision) {
     if (noteSaving) return;

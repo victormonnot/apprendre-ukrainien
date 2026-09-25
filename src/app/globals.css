@@ -468,6 +468,34 @@ nav[aria-label="Sommaire"] a:hover {
 .exercise-block {
   display: contents;
 }
+.exercise-instructions {
+  display: contents;
+}
+.exercise-overview {
+  margin-top: 1.7rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+.exercise-overview h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+.exercise-overview ul {
+  list-style: none;
+  padding: 0;
+}
+.exercise-overview li {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+.exercise-overview a {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 0.2em;
+}
 .prose p {
   color: var(--text);
   margin: 1rem 0;

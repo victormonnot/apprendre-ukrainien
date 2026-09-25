@@ -273,7 +273,7 @@ Garde quelques lignes pour noter les erreurs utiles après correction. Une fois 
 
 ## Exercices sur papier {#exercices}
 
-**Travaille sur papier.** Garde les consignes ci-dessous visibles et cache les passages du cours et de la fiche de vocabulaire qui donnent les réponses pour tes essais sans aide. Tu peux imprimer cette fiche. Les exercices ne sont pas à faire tous le même jour.
+**Travaille dans l’application ou sur papier.** Garde les consignes ci-dessous visibles et cache les passages du cours et de la fiche de vocabulaire qui donnent les réponses pour tes essais sans aide. Tu peux imprimer cette fiche ou ouvrir « Répondre dans l’application » sous un exercice. Les exercices ne sont pas à faire tous le même jour.
 
 Note **S** pour un essai sans aide, **A** pour une réponse produite avec le cours, un indice ou un outil. « S » ne signifie pas « juste » : la réponse reste à vérifier. Si tu changes quelque chose après consultation, garde la première version visible.
 
@@ -281,13 +281,13 @@ Date de début : __________
 
 Les exercices **1 à 8** sont repris à l’identique dans la [fiche d’exercices](/parcours/01/exercices). Cette fiche propose aussi les compléments **9 à 13**. Avant ces compléments, découvre les quatre mots supplémentaires dans la [fiche de vocabulaire](/parcours/01/vocabulaire).
 
-### Exercice 1 — Associer une lettre et son son
+### Exercice 1 — Associer une lettre et son son {#exercice-1}
 
 Pour chaque majuscule, écris sa minuscule et le repère français de son son : **Н · Р · У · В · С · К**.
 
 Numérote tes réponses **1a à 1f**, dans cet ordre. Premier passage avec le tableau autorisé ; deuxième passage sans lui sur une nouvelle ligne. Réponds ensuite en français : **1g. Pourquoi lire Н comme un H français serait-il une erreur ?**
 
-### Exercice 2 — Déchiffrer des mots entiers
+### Exercice 2 — Déchiffrer des mots entiers {#exercice-2}
 
 Pour chaque mot, écris un repère de lecture en lettres françaises, puis le sens français. Tous ont été introduits dans la partie 4 du cours. Utilise l’alphabet si nécessaire, mais essaie de retrouver le sens avant de regarder le vocabulaire.
 
@@ -299,7 +299,7 @@ Pour chaque mot, écris un repère de lecture en lettres françaises, puis le se
 
 Cet exercice travaille l’identification des lettres et le sens ; la notation française ne constitue pas une évaluation de ta prononciation réelle.
 
-### Exercice 3 — Produire à partir du sens
+### Exercice 3 — Produire à partir du sens {#exercice-3}
 
 Ferme le vocabulaire et écris en ukrainien :
 
@@ -311,7 +311,7 @@ Ferme le vocabulaire et écris en ukrainien :
 
 Si tu bloques, note d’abord ce que tu retrouves, puis regarde. Évite de remplacer directement une hésitation par une copie sans la signaler.
 
-### Exercice 4 — Montrer l’accent sans petit signe
+### Exercice 4 — Montrer l’accent sans petit signe {#exercice-4}
 
 Recopie chaque mot, découpe-le en syllabes à l’aide de la méthode du cours, puis **entoure la syllabe accentuée dans le cahier**. Écris aussi son numéro. Le tableau peut être consulté si nécessaire : le but est d’abord de comprendre la notation.
 
@@ -322,7 +322,7 @@ Recopie chaque mot, découpe-le en syllabes à l’aide de la méthode du cours,
 
 **4e.** À quoi sert l’accent tonique ? Réponds en une phrase en français.
 
-### Exercice 5 — Choisir une formule pour une situation
+### Exercice 5 — Choisir une formule pour une situation {#exercice-5}
 
 Écris la formule ukrainienne qui convient. Pour 5a et 5b, explique brièvement ton choix de registre en français.
 
@@ -333,13 +333,13 @@ Recopie chaque mot, découpe-le en syllabes à l’aide de la méthode du cours,
 - **5e.** Tu quittes la personne : tu dis au revoir.
 - **5f.** Écris « oui », puis « non ».
 
-### Exercice 6 — Comprendre et faire varier
+### Exercice 6 — Comprendre et faire varier {#exercice-6}
 
 - **6a.** Traduis **Мене звати Анна.** en français.
 - **6b.** Réécris cette phrase pour te présenter comme Maxime.
 - **6c.** Dans ce changement, quelle partie reste fixe et quelle partie varie ? Explique en français.
 
-### Exercice 7 — Premier échange autonome
+### Exercice 7 — Premier échange autonome {#exercice-7}
 
 En quatre lignes ukrainiennes, écris ce que tu dirais dans la situation suivante :
 
@@ -350,7 +350,7 @@ En quatre lignes ukrainiennes, écris ce que tu dirais dans la situation suivant
 
 Numérote **7a à 7d**. Écris seulement tes propres répliques. Tout le vocabulaire nécessaire est dans la session. Essaie de reconstruire à partir des fonctions demandées, sans recopier le dialogue du cours.
 
-### Exercice 8 — Rappel un autre jour
+### Exercice 8 — Rappel un autre jour {#exercice-8}
 
 À faire **après avoir fait vérifier le premier travail**, en laissant passer au moins une nuit et sans relire juste avant. Garde tes réponses : un rappel sans aide ne garantit pas qu’une réponse est juste.
 

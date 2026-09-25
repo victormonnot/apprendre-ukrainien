@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { documentHref, modules } from "@/content/catalog";
 import { LearningOverview } from "@/components/learning-overview";
+import { ExerciseOverview } from "@/components/exercise-overview";
 
 export const metadata: Metadata = { title: "Parcours" };
 
@@ -53,6 +54,7 @@ export default function CourseCatalogPage() {
                 Cours complet · Vocabulaire · Exercices
               </span>
             </div>
+            <ExerciseOverview moduleId={module.id} />
           </div>
         </section>
       ))}

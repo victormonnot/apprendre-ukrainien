@@ -45,7 +45,7 @@ export const modules: LearningModule[] = [
         label: "Exercices",
         filename: "exercises.md",
         description:
-          "Les exercices du cours et cinq activités complémentaires.",
+          "Les exercices du cours, cinq compléments et tes réponses conservées.",
       },
     ],
   },
