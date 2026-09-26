@@ -25,6 +25,14 @@ const descriptor: AudioDescriptor = {
   instructionsVersion: 1,
 };
 
+const novaDescriptor: AudioDescriptor = {
+  ...descriptor,
+  voiceId: "openai-nova",
+  voiceLabel: "Nova",
+  provider: "openai",
+  model: "gpt-4o-mini-tts-2025-12-15",
+};
+
 function wave(size = 46): Uint8Array {
   const bytes = Buffer.alloc(size);
   bytes.write("RIFF", 0);
@@ -143,17 +151,16 @@ test("NFC composition shares a cache while text, voice, model and instruction ch
     { ...descriptor, model: "macos-lesya-v2" },
     { ...descriptor, instructionsVersion: 2 },
     {
-      ...descriptor,
-      provider: "openai",
+      ...novaDescriptor,
       voiceId: "openai-marin",
-      model: "tts-v1",
+      voiceLabel: "Marin",
     },
     {
-      ...descriptor,
-      provider: "openai",
+      ...novaDescriptor,
       voiceId: "openai-cedar",
-      model: "tts-v1",
+      voiceLabel: "Cedar",
     },
+    novaDescriptor,
   ];
   const ids = [first.id];
   for (const variation of variations) {
@@ -171,14 +178,19 @@ test("audio remains available byte for byte after closing and reopening the stor
   const store = openAudioStore(context.directory, { now: context.now });
   const bytes = wave(48);
   bytes[44] = 42;
-  const clip = store.saveClip(userId, descriptor, bytes, "audio/wav");
+  const clips = [descriptor, novaDescriptor].map((voice) => ({
+    voice,
+    clip: store.saveClip(userId, voice, bytes, "audio/wav"),
+  }));
   store.close();
   const reopened = context.open();
-  assert.deepEqual(reopened.findClip(userId, descriptor), clip);
-  assert.deepEqual(reopened.getClip(userId, clip.id), {
-    clip,
-    bytes: new Uint8Array(bytes),
-  });
+  for (const { voice, clip } of clips) {
+    assert.deepEqual(reopened.findClip(userId, voice), clip);
+    assert.deepEqual(reopened.getClip(userId, clip.id), {
+      clip,
+      bytes: new Uint8Array(bytes),
+    });
+  }
 });
 
 test("clip IDs and descriptor cache entries stay isolated by profile", (t) => {
@@ -300,6 +312,7 @@ test("invalid descriptors cannot populate or bypass the cache", (t) => {
     { ...descriptor, instructionsVersion: 1.5 },
     { ...descriptor, provider: "openai" },
     { ...descriptor, voiceId: "openai-cedar" },
+    { ...descriptor, voiceId: "openai-nova" },
   ];
   for (const value of invalid) {
     assert.throws(() => store.findClip(userId, value), AudioValidationError);
@@ -310,91 +323,132 @@ test("invalid descriptors cannot populate or bypass the cache", (t) => {
   }
 });
 
-test("migration five preserves all earlier learning data and migration checksums", (t) => {
-  const context = fixture(t);
-  const migrationsDirectory = path.join(context.directory, "old-migrations");
-  mkdirSync(migrationsDirectory);
-  for (const filename of [
-    "001_learning.sql",
-    "002_exercises.sql",
-    "003_reviews.sql",
-    "004_language.sql",
-  ]) {
-    copyFileSync(
-      path.join(process.cwd(), "migrations", filename),
-      path.join(migrationsDirectory, filename),
-    );
-  }
-  const options = { migrationsDirectory, now: context.now };
-  const learning = openLearningStore(context.directory, options);
-  const userId = learning.getLocalUserId();
-  learning.saveNote(userId, "01", "cours", "Ma note avant l’audio", 0);
-  learning.saveCheckpoint(userId, "01", "cours", "premiers-mots");
-  learning.close();
-  const exercises = openExerciseStore(context.directory, options);
-  exercises.startAttempt(userId, getExercise("01-1")!);
-  exercises.close();
-  const reviews = openReviewStore(context.directory, options);
-  reviews.activateElement(userId, "01-mot-kava");
-  const active = reviews.startReview(userId).active!;
-  reviews.revealAnswer(userId, active.id, "Mon vrai rappel");
-  reviews.close();
-  const language = openLanguageStore(context.directory, options);
-  language.saveReference(userId, "01-mot-kava");
-  const result = language.recordResult(userId, {
-    requestId: randomUUID(),
-    input: {
-      mode: "translate",
-      text: "Café",
-      context: "Une boisson",
-      source: null,
-    },
-    content: {
-      title: "Café",
-      summary: "Une boisson",
-      ambiguity: "",
-      entries: [],
-      feedback: [],
-      practice: "Rappel",
-    },
-    model: "test-model",
-  });
-  language.saveResult(userId, result.id);
-  language.close();
-  const database = context.inspect();
-  const history = database
-    .prepare("SELECT * FROM schema_migrations ORDER BY version")
-    .all();
-  const snapshots = (
-    database
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations'",
-      )
-      .all() as { name: string }[]
-  ).map(({ name }) => ({
-    name,
-    rows: database.prepare(`SELECT * FROM ${name}`).all(),
-  }));
-  const store = context.open();
-  store.saveClip(userId, descriptor, wave(), "audio/wav");
-  for (const { name, rows } of snapshots) {
+test("audio migrations preserve existing clips, learning data and migration checksums", (t) => {
+  for (const initialVersion of [4, 8]) {
+    const context = fixture(t);
+    const migrationsDirectory = path.join(context.directory, "old-migrations");
+    mkdirSync(migrationsDirectory);
+    for (const filename of [
+      "001_learning.sql",
+      "002_exercises.sql",
+      "003_reviews.sql",
+      "004_language.sql",
+      "005_audio.sql",
+      "006_scenes.sql",
+      "007_resources.sql",
+      "008_backup.sql",
+    ].filter((filename) => Number(filename.slice(0, 3)) <= initialVersion)) {
+      copyFileSync(
+        path.join(process.cwd(), "migrations", filename),
+        path.join(migrationsDirectory, filename),
+      );
+    }
+    const options = { migrationsDirectory, now: context.now };
+    const learning = openLearningStore(context.directory, options);
+    const userId = learning.getLocalUserId();
+    learning.saveNote(userId, "01", "cours", "Ma note avant l’audio", 0);
+    learning.saveCheckpoint(userId, "01", "cours", "premiers-mots");
+    learning.close();
+    const exercises = openExerciseStore(context.directory, options);
+    exercises.startAttempt(userId, getExercise("01-1")!);
+    exercises.close();
+    const reviews = openReviewStore(context.directory, options);
+    reviews.activateElement(userId, "01-mot-kava");
+    const active = reviews.startReview(userId).active!;
+    reviews.revealAnswer(userId, active.id, "Mon vrai rappel");
+    reviews.close();
+    const language = openLanguageStore(context.directory, options);
+    language.saveReference(userId, "01-mot-kava");
+    const result = language.recordResult(userId, {
+      requestId: randomUUID(),
+      input: {
+        mode: "translate",
+        text: "Café",
+        context: "Une boisson",
+        source: null,
+      },
+      content: {
+        title: "Café",
+        summary: "Une boisson",
+        ambiguity: "",
+        entries: [],
+        feedback: [],
+        practice: "Rappel",
+      },
+      model: "test-model",
+    });
+    language.saveResult(userId, result.id);
+    language.close();
+    if (initialVersion === 8) {
+      const oldAudio = openAudioStore(context.directory, options);
+      for (const voice of [
+        descriptor,
+        {
+          ...novaDescriptor,
+          voiceId: "openai-marin" as const,
+          voiceLabel: "Marin",
+        },
+        {
+          ...novaDescriptor,
+          voiceId: "openai-cedar" as const,
+          voiceLabel: "Cedar",
+        },
+      ]) {
+        oldAudio.saveClip(userId, voice, wave(48), "audio/wav");
+      }
+      oldAudio.close();
+    }
+    const database = context.inspect();
+    const history = database
+      .prepare("SELECT * FROM schema_migrations ORDER BY version")
+      .all();
+    const snapshots = (
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations'",
+        )
+        .all() as { name: string }[]
+    ).map(({ name }) => ({
+      name,
+      rows: database.prepare(`SELECT * FROM ${name}`).all(),
+    }));
+    const store = context.open();
+    for (const { name, rows } of snapshots) {
+      assert.deepEqual(
+        database.prepare(`SELECT * FROM ${name}`).all(),
+        rows,
+        `${name} must be preserved`,
+      );
+    }
     assert.deepEqual(
-      database.prepare(`SELECT * FROM ${name}`).all(),
-      rows,
-      `${name} must be preserved`,
+      database
+        .prepare(
+          "SELECT * FROM schema_migrations WHERE version <= ? ORDER BY version",
+        )
+        .all(initialVersion),
+      history,
+    );
+    assert.equal(
+      database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
+        .count,
+      9,
+    );
+    const nova = store.saveClip(userId, novaDescriptor, wave(), "audio/wav");
+    assert.equal(store.findClip(userId, novaDescriptor)!.id, nova.id);
+    assert.deepEqual(database.prepare("PRAGMA foreign_key_check").all(), []);
+    assert.throws(
+      () =>
+        database
+          .prepare(
+            "UPDATE audio_clips SET voice_label = 'Changed' WHERE id = ?",
+          )
+          .run(nova.id),
+      /immutable/,
+    );
+    assert.throws(
+      () =>
+        database.prepare("DELETE FROM audio_clips WHERE id = ?").run(nova.id),
+      /cannot be deleted/,
     );
   }
-  assert.deepEqual(
-    database
-      .prepare(
-        "SELECT * FROM schema_migrations WHERE version <= 4 ORDER BY version",
-      )
-      .all(),
-    history,
-  );
-  assert.equal(
-    database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
-      .count,
-    8,
-  );
 });

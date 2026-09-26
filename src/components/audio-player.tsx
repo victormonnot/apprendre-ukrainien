@@ -10,6 +10,11 @@ import {
   type Ref,
 } from "react";
 import { loadAudioCatalogue, prepareAudio } from "@/lib/audio-client";
+import {
+  readAudioVoicePreference,
+  saveAudioVoicePreference,
+  subscribeAudioVoicePreference,
+} from "@/lib/audio-preference";
 import type {
   AudioCatalogue,
   AudioClip,
@@ -49,15 +54,8 @@ type Props = {
 };
 
 let activePlayer: { id: string; pause: () => void } | null = null;
-const VOICE_PREFERENCE = "ukrainian-audio-voice";
-
 function preferredVoice(catalogue: AudioCatalogue): AudioVoiceId | null {
-  let stored: string | null = null;
-  try {
-    stored = localStorage.getItem(VOICE_PREFERENCE);
-  } catch {
-    /* Storage is optional. */
-  }
+  const stored = readAudioVoicePreference();
   return (
     catalogue.voices.find((voice) => voice.id === stored)?.id ??
     catalogue.defaultVoiceId ??
@@ -182,6 +180,21 @@ function AudioPlayerSession({
     if (activePlayer?.id === id) activePlayer = null;
     callbacks.current.onInterrupt?.();
   }, [clearTimer, gapSeconds, id, transition]);
+
+  useEffect(
+    () =>
+      subscribeAudioVoicePreference((selected) => {
+        const next = selected ?? catalogue?.defaultVoiceId ?? null;
+        if (next === voiceRef.current) return;
+        stop();
+        voiceRef.current = next;
+        setVoiceId(next);
+        clipRef.current = null;
+        setClip(null);
+        setError(null);
+      }),
+    [catalogue, stop],
+  );
 
   useEffect(() => {
     mounted.current = true;
@@ -503,18 +516,8 @@ function AudioPlayerSession({
               value={voiceId ?? ""}
               onChange={(event) => {
                 claim();
-                stop();
                 const selected = event.target.value as AudioVoiceId;
-                voiceRef.current = selected;
-                setVoiceId(selected);
-                clipRef.current = null;
-                setClip(null);
-                setError(null);
-                try {
-                  localStorage.setItem(VOICE_PREFERENCE, selected);
-                } catch {
-                  /* Storage is optional. */
-                }
+                saveAudioVoicePreference(selected);
               }}
               disabled={!catalogue?.voices.length}
             >

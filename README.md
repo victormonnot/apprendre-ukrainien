@@ -235,6 +235,11 @@ voix lorsque le navigateur le permet. Un seul lecteur fonctionne à la fois dans
 changer de passage ou quitter la page arrête l’ancienne lecture. Masquer l’onglet
 la met en pause. Aucun audio ne démarre à l’ouverture d’une page.
 
+Le choix de voix est mémorisé dans le navigateur et partagé avec les lecteurs
+déjà ouverts, y compris dans les autres onglets de la même application. Changer
+de voix arrête la lecture en cours ; une nouvelle écoute reste un choix explicite.
+Les enregistrements précédents restent conservés.
+
 **Studio d’écoute** propose les mots et formules du module, puis trois extraits
 pour se présenter. Choisir entre :
 
@@ -255,7 +260,8 @@ sans clé ni transmission externe. `AUDIO_DISABLE_LOCAL=1` désactive cette
 possibilité. Sur un autre système, les sons déjà conservés restent lisibles et
 les voix OpenAI peuvent être configurées.
 
-**Marin** et **Cedar** utilisent la même `OPENAI_API_KEY` que l’atelier. Le modèle
+**Marin**, **Cedar** et **Nova** (timbre féminin) utilisent la même
+`OPENAI_API_KEY` que l’atelier. Le modèle
 audio est fixé à `gpt-4o-mini-tts-2025-12-15`, indépendamment de `OPENAI_MODEL`
 qui concerne les textes. Choisir une voix OpenAI et demander un son absent
 transmet son texte au fournisseur. La prononciation ukrainienne de ces voix doit

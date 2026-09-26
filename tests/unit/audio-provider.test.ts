@@ -74,6 +74,14 @@ test("audio descriptors normalize Ukrainian text and pin voice, model and instru
     model: "gpt-4o-mini-tts-2025-12-15",
     instructionsVersion: 1,
   });
+  assert.deepEqual(describeAudio("openai-nova", "Кава, будь ласка."), {
+    text: "Кава, будь ласка.",
+    voiceId: "openai-nova",
+    voiceLabel: "Nova",
+    provider: "openai",
+    model: "gpt-4o-mini-tts-2025-12-15",
+    instructionsVersion: 1,
+  });
   for (const invalid of [
     "",
     " ",
@@ -112,12 +120,13 @@ test("voice availability checks the exact installed Ukrainian voice and keeps cr
   });
   assert.equal(calls, 1);
   assert.deepEqual(
-    voices.map((voice) => [voice.id, voice.available]),
-    [
-      ["macos-lesya", true],
-      ["openai-marin", true],
-      ["openai-cedar", true],
-    ],
+    Object.fromEntries(voices.map((voice) => [voice.id, voice.available])),
+    {
+      "macos-lesya": true,
+      "openai-marin": true,
+      "openai-cedar": true,
+      "openai-nova": true,
+    },
   );
   assert.doesNotMatch(JSON.stringify(voices), new RegExp(secret));
   for (const output of [
@@ -274,7 +283,11 @@ test("audio provider refuses missing OpenAI credentials and altered descriptors 
 });
 
 test("OpenAI synthesis uses the fixed endpoint and WAV format with normal-speed Ukrainian instructions", async () => {
-  for (const voice of ["openai-marin", "openai-cedar"] as const) {
+  for (const [voice, apiVoice] of [
+    ["openai-marin", "marin"],
+    ["openai-cedar", "cedar"],
+    ["openai-nova", "nova"],
+  ] as const) {
     let calls = 0;
     const result = await synthesizeAudio(
       describeAudio(voice, descriptor.text),
@@ -293,10 +306,7 @@ test("OpenAI synthesis uses the fixed endpoint and WAV format with normal-speed 
           const body = JSON.parse(init?.body as string);
           assert.equal(body.model, "gpt-4o-mini-tts-2025-12-15");
           assert.equal(body.input, "Кава, будь ласка.");
-          assert.equal(
-            body.voice,
-            voice === "openai-marin" ? "marin" : "cedar",
-          );
+          assert.equal(body.voice, apiVoice);
           assert.equal(body.response_format, "wav");
           assert.equal(body.speed, 1);
           assert.match(body.instructions, /Speak in Ukrainian/);

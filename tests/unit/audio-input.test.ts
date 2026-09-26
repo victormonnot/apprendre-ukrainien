@@ -45,7 +45,15 @@ test("audio commands accept only known shapes and never a client-controlled text
     source: { kind: "reference", elementId: "01-mot-kava" },
     voiceId: "macos-lesya",
   };
-  assert.deepEqual(validateAudioCommand(valid), valid);
+  for (const voiceId of [
+    "macos-lesya",
+    "openai-marin",
+    "openai-cedar",
+    "openai-nova",
+  ]) {
+    const command = { ...valid, voiceId };
+    assert.deepEqual(validateAudioCommand(command), command);
+  }
   for (const value of [
     null,
     [],

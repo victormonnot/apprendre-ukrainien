@@ -1,4 +1,5 @@
-export type AudioVoiceId = "macos-lesya" | "openai-marin" | "openai-cedar";
+export type AudioVoiceId =
+  "macos-lesya" | "openai-marin" | "openai-cedar" | "openai-nova";
 export type AudioVoice = {
   id: AudioVoiceId;
   label: string;

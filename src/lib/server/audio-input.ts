@@ -33,7 +33,9 @@ export function validateAudioCommand(value: unknown): {
     !object(value) ||
     !keys(value, ["source", "voiceId"]) ||
     typeof value.voiceId !== "string" ||
-    !["macos-lesya", "openai-marin", "openai-cedar"].includes(value.voiceId) ||
+    !["macos-lesya", "openai-marin", "openai-cedar", "openai-nova"].includes(
+      value.voiceId,
+    ) ||
     !object(value.source)
   )
     throw new AudioInputError("Cette demande audio est invalide.");

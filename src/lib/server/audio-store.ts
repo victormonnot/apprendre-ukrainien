@@ -36,7 +36,8 @@ function canonicalDescriptor(descriptor: AudioDescriptor): AudioDescriptor {
     (descriptor.provider === "macos" && descriptor.voiceId === "macos-lesya") ||
     (descriptor.provider === "openai" &&
       (descriptor.voiceId === "openai-marin" ||
-        descriptor.voiceId === "openai-cedar"));
+        descriptor.voiceId === "openai-cedar" ||
+        descriptor.voiceId === "openai-nova"));
   if (
     text.length === 0 ||
     text.length > AUDIO_TEXT_MAX_LENGTH ||

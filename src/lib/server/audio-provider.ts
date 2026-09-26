@@ -20,6 +20,11 @@ import {
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024;
 const TIMEOUT_MS = 45_000;
 const OPENAI_MODEL = "gpt-4o-mini-tts-2025-12-15";
+const openAIVoices = {
+  "openai-marin": { name: "marin", label: "Marin" },
+  "openai-cedar": { name: "cedar", label: "Cedar" },
+  "openai-nova": { name: "nova", label: "Nova" },
+} as const;
 const LOCAL_MODEL = "macos-lesya-v1";
 const INSTRUCTIONS_VERSION = 1;
 const speechInstructions =
@@ -124,6 +129,14 @@ export async function audioVoices(
       description:
         "Voix de synthèse OpenAI. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
     },
+    {
+      id: "openai-nova",
+      label: "Nova · féminine",
+      provider: "openai",
+      available: openAIAvailable,
+      description:
+        "Voix de synthèse OpenAI au timbre féminin. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
+    },
   ];
 }
 
@@ -162,10 +175,11 @@ export function describeAudio(
       };
     case "openai-marin":
     case "openai-cedar":
+    case "openai-nova":
       return {
         text: normalized,
         voiceId,
-        voiceLabel: voiceId === "openai-marin" ? "Marin" : "Cedar",
+        voiceLabel: openAIVoices[voiceId].label,
         provider: "openai",
         model: OPENAI_MODEL,
         instructionsVersion: INSTRUCTIONS_VERSION,
@@ -366,6 +380,12 @@ async function openAIAudio(
   descriptor: AudioDescriptor,
   options: AudioProviderOptions,
 ): Promise<Uint8Array> {
+  if (descriptor.voiceId === "macos-lesya") {
+    throw new AudioProviderError(
+      "Cette voix n’est pas proposée par OpenAI.",
+      400,
+    );
+  }
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey?.trim()) {
     throw new AudioProviderError(
@@ -388,7 +408,7 @@ async function openAIAudio(
         body: JSON.stringify({
           model: descriptor.model,
           input: descriptor.text,
-          voice: descriptor.voiceId === "openai-marin" ? "marin" : "cedar",
+          voice: openAIVoices[descriptor.voiceId].name,
           instructions: speechInstructions,
           response_format: "wav",
           speed: 1,
