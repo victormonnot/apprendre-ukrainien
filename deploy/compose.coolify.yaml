@@ -1,0 +1,75 @@
+# Coolify supplies the public HTTPS route to gateway:80.
+# Neither service publishes a host port.
+# Simple runtime references keep secrets out of Coolify's generated build inputs.
+# Configure all four access variables in Coolify before starting the services.
+services:
+  app:
+    build:
+      # Coolify sets --project-directory to the repository's Base Directory.
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 60s
+    deploy:
+      replicas: 1
+    environment:
+      APP_DATA_DIR: /app/.data
+      APP_ORIGIN: https://${APP_HOST}
+      APP_PROXY_SECRET: ${APP_PROXY_SECRET}
+      AUDIO_DISABLE_LOCAL: "1"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-mini}
+    volumes:
+      - app_data:/app/.data
+
+  gateway:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      APP_LOGIN: ${APP_LOGIN}
+      APP_PASSWORD_HASH: ${APP_PASSWORD_HASH}
+      APP_PROXY_SECRET: ${APP_PROXY_SECRET}
+    expose:
+      - "80"
+    configs:
+      - source: gateway_caddyfile
+        target: /etc/caddy/Caddyfile
+
+configs:
+  gateway_caddyfile:
+    content: |
+      {
+        admin off
+        auto_https off
+      }
+
+      :80 {
+        header {
+          Cache-Control "private, no-store"
+          X-Frame-Options "DENY"
+        }
+
+        basic_auth {
+          {$$APP_LOGIN} {$$APP_PASSWORD_HASH}
+        }
+
+        encode zstd gzip
+
+        request_body {
+          max_size 268435456
+        }
+
+        reverse_proxy app:3000 {
+          header_up X-App-Proxy-Secret {$$APP_PROXY_SECRET}
+          header_up -Authorization
+          header_down Cache-Control "private, no-store"
+          header_down X-Frame-Options "DENY"
+        }
+      }
+
+volumes:
+  app_data:

@@ -1,6 +1,35 @@
 # Déploiement privé sur un VPS
 
-Cette configuration lance un serveur Next.js avec Node 24, SQLite et Caddy. Caddy protège tout le site par identifiant et mot de passe et gère le certificat HTTPS. Le port de l’application reste accessible uniquement sur le réseau Docker. Le service utilise un seul profil personnel partagé par les appareils connectés.
+Cette configuration lance un serveur Next.js avec Node 24, SQLite et Caddy. Caddy protège tout le site par identifiant et mot de passe. Le port de l’application reste accessible uniquement sur le réseau Docker. Le service utilise un seul profil personnel partagé par les appareils connectés.
+
+Choisir la configuration Coolify ci-dessous ou l’installation autonome des sections suivantes. Dans Coolify, son proxy gère HTTPS ; en installation autonome, Caddy gère aussi le certificat.
+
+## Avec Coolify
+
+Utiliser une application **Docker Compose depuis le dépôt Git**, avec **Base Directory** `/` et **Docker Compose Location** `/deploy/compose.coolify.yaml`. Laisser **Raw Compose Deployment**, **Connect To Predefined Network** et les prévisualisations désactivés. Le fichier réutilise le Dockerfile du dépôt et embarque la configuration Caddy avec `configs.content` ; Docker Compose 2.23.1 ou plus récent est nécessaire. Aucun montage du dépôt ni deuxième proxy public n’est nécessaire.
+
+Coolify fixe le répertoire de projet à la racine du dépôt. Pour valider cette variante en local avec les valeurs de `deploy/.env`, reproduire ce réglage depuis la racine : `docker compose --project-directory . --env-file deploy/.env -f deploy/compose.coolify.yaml config --quiet`.
+
+Dans **Domains for gateway**, saisir uniquement l’URL HTTPS du site, par exemple `https://ukrainien.example.com`, et garder **Force Https** activé. Laisser **Domains for app** vide, en retirant tout domaine généré. Le proxy Coolify termine HTTPS et transmet à `gateway:80`, qui authentifie la requête avant de joindre `app:3000`. Aucun `ports:` ne doit être ajouté à ces services. Cette configuration remplace le lancement du `compose.yaml` autonome.
+
+Dans **Environment Variables**, renseigner les valeurs suivantes en activant **Runtime Variable** et en désactivant **Build Variable**. Désactiver également **Inject Build Args to Dockerfile** ; aucun secret n’est nécessaire à la construction.
+
+Les quatre variables d’accès `APP_HOST`, `APP_LOGIN`, `APP_PASSWORD_HASH` et `APP_PROXY_SECRET` sont obligatoires au démarrage. Pendant le build, Compose peut annoncer qu’elles sont absentes et les remplacer par des valeurs vides : les services ne démarrent pas à cette étape. Une configuration d’accès restée vide au démarrage ne donne aucun accès au site.
+
+| Variable            | Valeur                                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_HOST`          | Le nom d’hôte du domaine choisi, sans `https://`, chemin ni slash final.                                                                                   |
+| `APP_LOGIN`         | L’identifiant personnel, sans espace.                                                                                                                      |
+| `APP_PASSWORD_HASH` | Le hash bcrypt généré avec la commande Caddy de la section suivante. En vue **Normal**, coller le hash seul et activer **Literal** pour préserver les `$`. |
+| `APP_PROXY_SECRET`  | Le résultat de `openssl rand -hex 32`, identique pour l’application et la passerelle.                                                                      |
+| `OPENAI_API_KEY`    | Facultatif ; laisser vide pour utiliser les fonctions locales.                                                                                             |
+| `OPENAI_MODEL`      | Facultatif ; `gpt-5.4-mini` par défaut.                                                                                                                    |
+
+Les variables restent dans Coolify, jamais dans Git. `deploy/.env.example` décrit les mêmes valeurs pour une validation locale, mais aucun fichier `.env` n’est nécessaire dans le dépôt déployé. La passerelle conserve Host et Origin, remplace `X-App-Proxy-Secret`, retire Authorization, limite les imports à 256 Mio et interdit la mise en cache partagée et l’affichage en iframe.
+
+Déployer puis vérifier que HTTP redirige vers HTTPS, qu’une visite HTTPS sans identifiants reçoit `401`, et qu’une connexion permet d’ouvrir **Mes données**. Le stockage `app_data`, monté sur `/app/.data`, appartient à cette ressource Coolify. Relever son nom Docker effectif dans **Persistent Storage** ou dans la configuration Compose générée : Coolify peut le préfixer. Conserver la même ressource et ce volume lors des redéploiements ; supprimer le stockage ou recréer la ressource avec un autre volume ne reprendrait pas les données.
+
+Avant chaque mise à jour, créer et télécharger une sauvegarde depuis **Mes données**, puis redéployer le commit choisi. Garder une seule instance `app` sur ce volume, sans déploiement parallèle ni Swarm ; Compose remplace le conteneur avec une interruption possible. Les sauvegardes hors VPS, la migration depuis le Mac et la compatibilité des migrations suivent les sections ci-dessous. La voix macOS Lesya reste indisponible sur Linux ; les audios déjà conservés restent lisibles.
 
 ## Préparer le serveur
 
@@ -110,6 +139,11 @@ Les autres projets restent sur leurs propres volumes et noms d’hôte. L’ajou
 
 ## Références
 
+- [Applications Docker Compose dans Coolify](https://coolify.io/docs/applications/builds/docker-compose)
+- [Variables runtime et valeurs littérales dans Coolify](https://coolify.io/docs/applications/configuration/environment-variables)
+- [Stockage persistant dans Coolify](https://coolify.io/docs/applications/configuration/persistent-storage)
+- [Remplacement des conteneurs et Docker Compose dans Coolify](https://coolify.io/docs/applications/deployments/rolling-updates)
+- [Configurations embarquées de Docker Compose](https://docs.docker.com/reference/compose-file/configs/)
 - [Authentification HTTP de Caddy](https://caddyserver.com/docs/caddyfile/directives/basic_auth)
 - [Proxy HTTP et en-têtes](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
 - [Variables et interpolation de Docker Compose](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
