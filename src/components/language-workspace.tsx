@@ -193,10 +193,7 @@ function Workshop({ query }: { query: string }) {
       const params = new URLSearchParams(query);
       const exerciseId = params.get("exercise");
       const attemptId = params.get("attempt");
-      const resultId =
-        reload > 0 && draft
-          ? (draft.resultId ?? params.get("result"))
-          : (params.get("result") ?? draft?.resultId);
+      const resultId = draft?.resultId ?? params.get("result");
       const nextInput = draft?.input ?? queryInput(params);
       const responses = await Promise.allSettled([
         loadLanguageLibrary(controller.signal),
@@ -212,10 +209,17 @@ function Workshop({ query }: { query: string }) {
       if (libraryResponse.status === "fulfilled")
         setLibrary(libraryResponse.value);
       if (inputResponse.status === "fulfilled") {
-        const restoredInput =
-          exerciseId && draft && inputResponse.value.source?.kind === "exercise"
-            ? { ...inputResponse.value, context: draft.input.context }
+        const initialInput =
+          !draft &&
+          !(exerciseId && attemptId) &&
+          resultResponse.status === "fulfilled" &&
+          resultResponse.value
+            ? resultResponse.value.input
             : inputResponse.value;
+        const restoredInput =
+          exerciseId && draft && initialInput.source?.kind === "exercise"
+            ? { ...initialInput, context: draft.input.context }
+            : initialInput;
         setInput(restoredInput);
         setInputReady(true);
         pending.current =

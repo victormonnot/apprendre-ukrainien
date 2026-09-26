@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   validateLanguageInput,
   submittedLanguageInput,
+  submittedLanguageAnswers,
   LanguageInputError,
 } from "../../src/lib/server/language-input.ts";
 import type { ExerciseAttempt } from "../../src/lib/exercise-types.ts";
@@ -96,8 +97,23 @@ test("writing assistance uses the submitted definition and original answers with
     attemptId: attempt.id,
   });
   assert.deepEqual(attempt, copy);
+  assert.deepEqual(
+    submittedLanguageAnswers(attempt),
+    definition.items.map(() => "Réponse originale"),
+  );
+  assert.deepEqual(submittedLanguageAnswers({ ...attempt, answers: {} }), []);
+  const withChoice = {
+    ...attempt,
+    definition: getExercise("01-4")!,
+    answers: { "4a": { fields: { stress: "1" }, aid: "none" as const } },
+  };
+  assert.deepEqual(submittedLanguageAnswers(withChoice), ["1re syllabe"]);
   assert.throws(
     () => submittedLanguageInput({ ...attempt, status: "draft" }),
+    LanguageInputError,
+  );
+  assert.throws(
+    () => submittedLanguageAnswers({ ...attempt, status: "draft" }),
     LanguageInputError,
   );
 });

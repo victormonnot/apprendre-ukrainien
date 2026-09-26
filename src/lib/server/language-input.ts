@@ -78,6 +78,24 @@ export function validateLanguageInput(value: unknown): LanguageInput {
   };
 }
 
+export function submittedLanguageAnswers(attempt: ExerciseAttempt): string[] {
+  if (attempt.status !== "submitted")
+    throw new LanguageInputError(
+      "Remets tes réponses avant de demander une relecture.",
+    );
+  return attempt.definition.items.flatMap((item) =>
+    item.fields
+      .map((field) => {
+        const value = attempt.answers[item.id]?.fields[field.id] ?? "";
+        return (
+          field.options?.find((option) => option.value === value)?.label ??
+          value
+        );
+      })
+      .filter((answer) => answer.trim()),
+  );
+}
+
 export function submittedLanguageInput(
   attempt: ExerciseAttempt,
 ): LanguageInput {

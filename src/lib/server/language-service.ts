@@ -14,7 +14,10 @@ import {
 } from "./language-store";
 import { generateLanguageResult } from "./language-provider";
 import { RequestError } from "./local-request";
-import { submittedLanguageInput } from "./language-input";
+import {
+  submittedLanguageAnswers,
+  submittedLanguageInput,
+} from "./language-input";
 import {
   assertWorkspaceGeneration,
   getWorkspaceGeneration,
@@ -49,7 +52,7 @@ export const languageReferences: LanguageReference[] = reviewElements.map(
     };
   },
 );
-export function getSubmittedInput(
+function getSubmittedAttempt(
   userId: string,
   exerciseId: string,
   attemptId: string,
@@ -62,7 +65,16 @@ export function getSubmittedInput(
       "Cette remise est introuvable. Remets tes réponses avant de demander une relecture.",
       404,
     );
-  return submittedLanguageInput(attempt);
+  return attempt;
+}
+export function getSubmittedInput(
+  userId: string,
+  exerciseId: string,
+  attemptId: string,
+) {
+  return submittedLanguageInput(
+    getSubmittedAttempt(userId, exerciseId, attemptId),
+  );
 }
 export async function resolveLanguageInput(
   userId: string,
@@ -131,7 +143,17 @@ export async function requestLanguageResult(
     );
   if (languageConfigured()) state.languageCalls.set(owner, [...recent, now]);
   const promise = (async () => {
-    const generated = await generateLanguageResult(input);
+    const quotationSources =
+      input.source?.kind === "exercise"
+        ? submittedLanguageAnswers(
+            getSubmittedAttempt(
+              userId,
+              input.source.exerciseId,
+              input.source.attemptId,
+            ),
+          )
+        : undefined;
+    const generated = await generateLanguageResult(input, { quotationSources });
     assertWorkspaceGeneration(generation);
     return store.recordResult(userId, { requestId, input, ...generated });
   })().catch((error: unknown) => {

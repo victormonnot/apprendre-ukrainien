@@ -201,13 +201,16 @@ prononciation approximatifs. Pour les mots isolés, la syllabe accentuée appara
 en gras avec sa position lorsque le modèle peut la proposer. Les aides écrites
 ne constituent pas une évaluation de la prononciation. La relecture ne note pas
 la maîtrise et doit conserver une incertitude quand plusieurs formulations
-peuvent convenir.
+peuvent convenir. Les repères de syllabes incohérents sont omis dans les nouvelles
+réponses ; ce contrôle de forme ne vérifie pas à lui seul la justesse de l’accent.
+Les réponses déjà conservées gardent leur contenu et leur modèle d’origine.
 
 Pour activer les demandes au modèle, créer `.env.local` à partir des indications
 de `.env.example` et définir `OPENAI_API_KEY`. `OPENAI_MODEL` permet de choisir
-un modèle compatible avec Responses et Structured Outputs ; la valeur par
-défaut est `gpt-5.4-mini`. Redémarrer le serveur après une modification. La clé
-reste côté serveur. Les appels sont facturés par le fournisseur sur le compte
+un modèle compatible avec Responses, Structured Outputs et `reasoning.effort=medium` ;
+la valeur par défaut est `gpt-6-luna`. Le raisonnement est fixé à `medium` pour
+améliorer les distinctions de sens et les explications linguistiques. Redémarrer
+le serveur après une modification. La clé reste côté serveur. Les appels sont facturés par le fournisseur sur le compte
 associé à cette clé.
 
 Seule une demande explicite transmet le texte, son contexte et les métadonnées

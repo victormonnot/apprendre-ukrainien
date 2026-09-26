@@ -23,7 +23,7 @@ Les quatre variables d’accès `APP_HOST`, `APP_LOGIN`, `APP_PASSWORD_HASH` et 
 | `APP_PASSWORD_HASH` | Le hash bcrypt généré avec la commande Caddy de la section suivante. En vue **Normal**, coller le hash seul et activer **Literal** pour préserver les `$`. |
 | `APP_PROXY_SECRET`  | Le résultat de `openssl rand -hex 32`, identique pour l’application et la passerelle.                                                                      |
 | `OPENAI_API_KEY`    | Facultatif ; laisser vide pour utiliser les fonctions locales.                                                                                             |
-| `OPENAI_MODEL`      | Facultatif ; `gpt-5.4-mini` par défaut.                                                                                                                    |
+| `OPENAI_MODEL`      | Facultatif ; `gpt-6-luna` par défaut.                                                                                                                      |
 
 Les variables restent dans Coolify, jamais dans Git. `deploy/.env.example` décrit les mêmes valeurs pour une validation locale, mais aucun fichier `.env` n’est nécessaire dans le dépôt déployé. La passerelle conserve Host et Origin, remplace `X-App-Proxy-Secret`, retire Authorization, limite les imports à 256 Mio et interdit la mise en cache partagée et l’affichage en iframe.
 

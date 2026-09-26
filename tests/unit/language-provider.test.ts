@@ -9,6 +9,7 @@ import {
   LanguageProviderError,
   validateLanguageResultContent,
 } from "../../src/lib/server/language-provider.ts";
+import { describeAudio } from "../../src/lib/server/audio-provider.ts";
 
 const input: LanguageInput = {
   mode: "translate",
@@ -91,6 +92,7 @@ test("language provider sends structured data to the fixed endpoint without stor
     const body = JSON.parse(init?.body as string);
     assert.equal(body.model, "gpt-5.4-mini");
     assert.equal(body.store, false);
+    assert.deepEqual(body.reasoning, { effort: "medium" });
     assert.equal(body.max_output_tokens, 6_000);
     assert.equal(body.text.format.type, "json_schema");
     assert.equal(body.text.format.strict, true);
@@ -109,6 +111,25 @@ test("language provider sends structured data to the fixed endpoint without stor
   });
   assert.deepEqual(result, { content, model: "gpt-5.4-mini" });
   assert.equal(calls, 1);
+});
+
+test("Luna is the default text model with explicit reasoning effort", async (context) => {
+  const previous = process.env.OPENAI_MODEL;
+  delete process.env.OPENAI_MODEL;
+  context.after(() => {
+    if (previous === undefined) delete process.env.OPENAI_MODEL;
+    else process.env.OPENAI_MODEL = previous;
+  });
+  const result = await generateLanguageResult(input, {
+    apiKey: secret,
+    fetch: async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      assert.equal(body.model, "gpt-6-luna");
+      assert.deepEqual(body.reasoning, { effort: "medium" });
+      return response();
+    },
+  });
+  assert.equal(result.model, "gpt-6-luna");
 });
 
 test("provider refuses missing configuration and invalid input before network access", async () => {
@@ -141,6 +162,71 @@ test("provider refuses missing configuration and invalid input before network ac
     );
   }
   assert.equal(calls, 0);
+});
+
+test("new generated examples use normal spelling that the audio provider can read", async () => {
+  const generated = structuredClone(content);
+  generated.entries[0]!.examples[0]!.ukrainian = "Це ка\u0301ва.";
+  const result = await generateLanguageResult(input, {
+    apiKey: secret,
+    fetch: transport(response(generated)),
+  });
+  const example = result.content.entries[0]!.examples[0]!.ukrainian;
+  assert.equal(example, "Це кава.");
+  assert.equal(describeAudio("openai-nova", example).text, example);
+  assert.equal(generated.entries[0]!.examples[0]!.ukrainian, "Це ка\u0301ва.");
+});
+
+test("new responses omit inconsistent stress hints without discarding usable translations", async () => {
+  for (const hints of [
+    { syllables: ["кава"], stressIndex: 0 },
+    { syllables: ["ка", "ва"], stressIndex: null },
+    { syllables: ["ка", "ва"], stressIndex: 2 },
+    { syllables: ["ка", "во"], stressIndex: 0 },
+    { syllables: [], stressIndex: null },
+  ]) {
+    const generated = structuredClone(content);
+    Object.assign(generated.entries[0]!, hints);
+    const result = await generateLanguageResult(input, {
+      apiKey: secret,
+      fetch: transport(response(generated)),
+    });
+    assert.deepEqual(result.content.entries[0], {
+      ...generated.entries[0],
+      pronunciation: "",
+      syllables: [],
+      stressIndex: null,
+    });
+  }
+  // The new-response normalization must not silently rewrite stored history.
+  const historical = structuredClone(content);
+  historical.entries[0]!.syllables = ["кава"];
+  assert.deepEqual(validateLanguageResultContent(historical), historical);
+});
+
+test("capitalized headwords retain valid stress boundaries and phrase pronunciation is preserved", async () => {
+  const generated = structuredClone(content);
+  Object.assign(generated.entries[0]!, {
+    ukrainian: "Дякую",
+    syllables: ["дя", "ку", "ю"],
+    stressIndex: 0,
+    pronunciation: "DIA-kou-you",
+  });
+  generated.entries.push({
+    ...generated.entries[0]!,
+    ukrainian: "Дякую за каву.",
+    pronunciation: "DIA-kou-you za KA-vou",
+    syllables: [],
+    stressIndex: null,
+  });
+  const result = await generateLanguageResult(input, {
+    apiKey: secret,
+    fetch: transport(response(generated)),
+  });
+  assert.deepEqual(result.content.entries[0]!.syllables, ["Дя", "ку", "ю"]);
+  assert.equal(result.content.entries[0]!.stressIndex, 0);
+  assert.equal(result.content.entries[0]!.pronunciation, "DIA-kou-you");
+  assert.deepEqual(result.content.entries[1], generated.entries[1]);
 });
 
 test("output validation rejects wrong types, unexpected fields, excessive sizes and misleading stress", () => {
@@ -397,9 +483,39 @@ test("provider accepts the server-resolved exercise snapshot while bounding its 
   };
   const result = await generateLanguageResult(exerciseInput, {
     apiKey: secret,
-    fetch: transport(response(correction)),
+    quotationSources: ["Réponse remise"],
+    fetch: async (_url, init) => {
+      const sent = JSON.parse(
+        JSON.parse(init!.body as string).input[1].content,
+      );
+      assert.deepEqual(sent.submittedAnswers, ["Réponse remise"]);
+      assert.equal(sent.text, exerciseInput.text);
+      return response(correction);
+    },
   });
   assert.deepEqual(result.content, correction);
+  await assert.rejects(
+    generateLanguageResult(exerciseInput, {
+      apiKey: secret,
+      quotationSources: ["Réponse remise"],
+      fetch: transport(
+        response({
+          ...correction,
+          feedback: [{ ...correction.feedback[0], original: "sa consigne" }],
+        }),
+      ),
+    }),
+    failsWith(502, /inexploitable/),
+  );
+  await assert.rejects(
+    generateLanguageResult(exerciseInput, {
+      apiKey: secret,
+      quotationSources: [],
+      fetch: async () =>
+        assert.fail("an empty submission must not contact the provider"),
+    }),
+    failsWith(422, /pas de réponse/),
+  );
   await assert.rejects(
     generateLanguageResult(
       { ...exerciseInput, text: "a".repeat(60_001) },

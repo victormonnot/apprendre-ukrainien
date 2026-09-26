@@ -299,6 +299,148 @@ test.describe("language workshop", () => {
         .getByRole("button", { name: "Fiche enregistrée" }),
     ).toBeDisabled();
   });
+
+  test("a result link resumes the newer result and draft without replacing another link's input", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile,
+      "Draft and result restoration do not depend on the viewport.",
+    );
+    const originalInput: LanguageInput = {
+      mode: "explain",
+      text: "кава",
+      context: "Comprendre ce mot du cours",
+      source: {
+        kind: "document",
+        moduleId: "01",
+        view: "vocabulaire",
+        anchor: "premiers-mots",
+      },
+    };
+    const original = seed(randomUUID(), originalInput);
+    const otherInput: LanguageInput = {
+      mode: "correct",
+      text: "Я тут.",
+      context: "Vérifier une autre phrase",
+      source: null,
+    };
+    const other = seed(randomUUID(), otherInput);
+    const generatedIds: string[] = [];
+    await page.route("**/api/language", async (route) => {
+      if (route.request().method() === "GET") {
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          json: { ...(await response.json()), configured: true },
+        });
+        return;
+      }
+      const command = route.request().postDataJSON();
+      if (command.type === "generate") {
+        // The real endpoint replays this stored result; no provider is called.
+        generatedIds.push(seed(command.requestId, command.input).id);
+      }
+      await route.continue();
+    });
+    page.on("dialog", (dialog) => dialog.accept());
+    const originalUrl = `/atelier?result=${original.id}`;
+    await page.goto(originalUrl);
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      original.id,
+    );
+    await expect(
+      page.getByRole("radio", { name: "Expliquer", exact: true }),
+    ).toBeChecked();
+    await expect(
+      page.getByLabel("Passage à comprendre", { exact: true }),
+    ).toHaveValue(originalInput.text);
+    await expect(page.getByLabel("Contexte ou question")).toHaveValue(
+      originalInput.context,
+    );
+    await expect(
+      page.getByRole("link", { name: "Revenir au passage du cours" }),
+    ).toHaveAttribute("href", "/parcours/01/vocabulaire#premiers-mots");
+
+    await page.getByRole("radio", { name: "Traduire", exact: true }).check();
+    await page
+      .getByLabel("Mot ou phrase à traduire", { exact: true })
+      .fill("bonjour");
+    await page
+      .getByLabel("Contexte ou question")
+      .fill("Une nouvelle demande depuis cette fiche");
+    await page.getByRole("button", { name: "Traduire ce texte" }).click();
+    await expect.poll(() => generatedIds.length).toBe(1);
+    const recentId = generatedIds[0]!;
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      recentId,
+    );
+    await expect(page).toHaveURL(new RegExp(`result=${original.id}$`));
+
+    await page.reload();
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      recentId,
+    );
+    await expect(
+      page.getByLabel("Mot ou phrase à traduire", { exact: true }),
+    ).toHaveValue("bonjour");
+    await expect(page.getByLabel("Contexte ou question")).toHaveValue(
+      "Une nouvelle demande depuis cette fiche",
+    );
+    await page
+      .getByLabel("Mot ou phrase à traduire", { exact: true })
+      .fill("bonsoir");
+    await page
+      .getByLabel("Contexte ou question")
+      .fill("Brouillon encore à travailler");
+    await page.reload();
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      recentId,
+    );
+    await expect(
+      page.getByLabel("Mot ou phrase à traduire", { exact: true }),
+    ).toHaveValue("bonsoir");
+    await expect(page.getByLabel("Contexte ou question")).toHaveValue(
+      "Brouillon encore à travailler",
+    );
+
+    await page.goto(`/atelier?result=${other.id}`);
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      other.id,
+    );
+    await expect(
+      page.getByRole("radio", { name: "Relire un texte", exact: true }),
+    ).toBeChecked();
+    await expect(
+      page.getByLabel("Mon texte en ukrainien", { exact: true }),
+    ).toHaveValue(otherInput.text);
+    await expect(page.getByLabel("Contexte ou question")).toHaveValue(
+      otherInput.context,
+    );
+    await expect(
+      page.getByRole("link", { name: "Revenir au passage du cours" }),
+    ).toHaveCount(0);
+
+    await page.goto(originalUrl);
+    await expect(page.locator(".language-result")).toHaveAttribute(
+      "data-language-result-id",
+      recentId,
+    );
+    await expect(
+      page.getByLabel("Mot ou phrase à traduire", { exact: true }),
+    ).toHaveValue("bonsoir");
+    await expect(page.getByLabel("Contexte ou question")).toHaveValue(
+      "Brouillon encore à travailler",
+    );
+    expect(generatedIds).toHaveLength(1);
+  });
+
   test("assistance reads the original submitted exercise and cannot replace it with client text", async ({
     page,
     request,

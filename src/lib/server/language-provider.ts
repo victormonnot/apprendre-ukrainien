@@ -10,7 +10,7 @@ import {
 const RESPONSE_MAX_BYTES = 256 * 1024;
 const CONTENT_MAX_BYTES = 64 * 1024;
 const TIMEOUT_MS = 45_000;
-const DEFAULT_MODEL = "gpt-5.4-mini";
+const DEFAULT_MODEL = "gpt-6-luna";
 const SUBMITTED_EXERCISE_MAX_LENGTH = 60_000;
 
 export class LanguageProviderError extends Error {
@@ -252,9 +252,14 @@ Rédige les explications en français, simplement mais sans sacrifier l'exactitu
 Modes : translate traduit un mot ou une phrase du français vers l'ukrainien, ou de l'ukrainien vers le français ; explain explique le passage ; correct commente une production écrite. En cas de langue inconnue ou de sens indécidable, expose l'incertitude. Pour translate, donne au moins une entrée exploitable ; pour correct, au moins un feedback.
 Distingue les sens utiles selon le contexte. Ne force pas un sens unique pour un mot ambigu. Utilise ambiguity pour expliquer le choix ou demander la précision nécessaire ; chaîne vide si rien à préciser.
 Chaque entrée donne l'orthographe ukrainienne normale sans accent combinant, une traduction française, un usage concret et 1 à 3 exemples courts avec leur traduction. Pas de fausses citations, de liens inventés ni de prétendue vérification par un locuteur.
-pronunciation est une approximation en lettres françaises, distincte d'une translittération standard. Signale brièvement les sons sans équivalent exact si nécessaire ; MAJUSCULES pour la syllabe tonique. Laisse vide si incertain. Ne juge jamais l'oral ni l'accent à partir de l'écrit.
+Les exemples ukrainiens utilisent eux aussi l'orthographe normale, sans accent combinant, pour permettre leur écoute.
+pronunciation est une approximation en lettres françaises, distincte d'une translittération standard. Transcris les sons ukrainiens, jamais la traduction française du mot. Signale brièvement les sons sans équivalent exact si nécessaire ; MAJUSCULES pour la syllabe tonique. Laisse vide si incertain, notamment si plusieurs sens impliquent des accents différents. Ne juge jamais l'oral ni l'accent à partir de l'écrit.
+Garde les conventions du cours : і → i ; и → i* (un i plus relâché, distinct de і ; l'astérisque n'ajoute aucun son) ; у → ou ; е → è ; ж → j ; ч → tch ; ш → ch. La lettre ы n'appartient pas à l'alphabet ukrainien : ne l'utilise pas pour expliquer и. Ne réduis pas les о non accentués en a. Devant une voyelle, в se représente par v, pas par un w anglais. Distingue г (h soufflé) et х (kh). Ne nasalise pas les groupes voyelle + n. Explique seulement les sons présents dans le passage étudié, sans ajouter de fausse règle générale.
 Pour un seul mot ukrainien dont l'accent est connu : syllables contient les syllabes ukrainiennes entières, sans séparateurs ni accents ajoutés ; leur concaténation reproduit exactement ukrainian. stressIndex est l'indice de la syllabe tonique à partir de zéro. Pour une phrase, plusieurs mots, une lettre isolée ou un accent incertain, syllables=[] et stressIndex=null. N'invente pas d'accent.
+Chaque syllabe contient une seule voyelle ukrainienne. Par exemple, кава a deux syllabes : ["ка", "ва"], avec stressIndex=0 ; ne mets jamais le mot entier dans une seule syllabe s'il contient plusieurs voyelles. Si tu ne peux pas proposer ces repères de façon cohérente, omets-les et laisse aussi pronunciation vide.
 Pour correct, cite fidèlement chaque extrait dans original et explique une suggestion sans réécrire silencieusement la réponse de l'élève. Une variante idiomatique qui exprime le même sens est acceptable, même si différente d'un corrigé. status=improve uniquement pour un problème justifié ; acceptable pour une formulation recevable ; uncertain si le contexte ou l'analyse ne permet pas de trancher. N'attribue ni note ni succès automatique. Une suggestion vide est permise si aucun changement ne s'impose.
+Si une phrase est correcte, status=acceptable et suggestion="". Une alternative stylistique ou une nuance de quantité peut être expliquée dans summary, mais ne transforme pas une phrase correcte en erreur. Vérifie la cohérence entre ton commentaire et le statut choisi. Évite les règles de grammaire générales quand plusieurs constructions sont possibles.
+Pour une remise d'exercice, submittedAnswers contient uniquement les réponses effectivement remises. Cite dans original un extrait de cette liste, jamais une consigne ou un intitulé de champ. Les consignes présentes dans text servent seulement à comprendre la tâche.
 Le résultat est une assistance générée, distincte du contenu de référence du cours et du bilan des exercices. practice peut proposer une courte activité facultative sans son corrigé, ou être vide. N'ajoute aucun markdown ni HTML : texte simple et champs structurés.
 Reste concis : titre 160 caractères, résumé 3000, ambiguïté 1500, pratique 1000 maximum. Au plus 6 entrées et 20 feedbacks. Par entrée : ukrainian/french/usage 1000, pronunciation 500, 16 syllabes de 32 caractères au plus. Par exemple : 1000 caractères par langue. Par feedback : original/suggestion 2000, explanation 1000. Toutes les limites sont des maximums, pas des objectifs.`;
 
@@ -338,6 +343,61 @@ function parseResponse(
   } catch {
     throw invalidOutput();
   }
+  // These hints are optional. Omit inconsistent generated hints rather than
+  // highlighting an entire word or inventing a stress for an ambiguous word.
+  // Stored responses keep their original validation and are never rewritten.
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "entries" in parsed &&
+    Array.isArray(parsed.entries)
+  ) {
+    for (const item of parsed.entries) {
+      if (
+        !item ||
+        typeof item.ukrainian !== "string" ||
+        typeof item.pronunciation !== "string" ||
+        !Array.isArray(item.syllables) ||
+        !item.syllables.every((part: unknown) => typeof part === "string") ||
+        (item.stressIndex !== null && typeof item.stressIndex !== "number")
+      )
+        continue;
+      const word = /^[а-щьюяєіїґ'’ʼ]+$/iu.test(item.ukrainian);
+      // A capitalized headword may arrive with lowercase syllables. Preserve
+      // the proposed boundaries while restoring the headword's spelling.
+      if (
+        word &&
+        item.syllables.join("").toLowerCase() === item.ukrainian.toLowerCase()
+      ) {
+        let offset = 0;
+        item.syllables = item.syllables.map((part: string) => {
+          const syllable = item.ukrainian.slice(offset, offset + part.length);
+          offset += part.length;
+          return syllable;
+        });
+      }
+      const validStress =
+        word &&
+        item.ukrainian.length > 1 &&
+        Number.isInteger(item.stressIndex) &&
+        item.stressIndex >= 0 &&
+        item.stressIndex < item.syllables.length &&
+        item.syllables.join("").normalize("NFC") ===
+          item.ukrainian.normalize("NFC") &&
+        item.syllables.every(
+          (part: string) => (part.match(/[аеєиіїоуюя]/giu) ?? []).length === 1,
+        );
+      if (
+        (item.syllables.length > 0 || item.stressIndex !== null) &&
+        !validStress
+      ) {
+        item.syllables = [];
+        item.stressIndex = null;
+        item.pronunciation = "";
+      }
+      if (word && item.stressIndex === null) item.pronunciation = "";
+    }
+  }
   return validateLanguageResultContent(parsed, mode);
 }
 
@@ -347,7 +407,12 @@ function normalizeQuotation(value: string): string {
 
 export async function generateLanguageResult(
   input: LanguageInput,
-  options: { apiKey?: string; model?: string; fetch?: typeof fetch } = {},
+  options: {
+    apiKey?: string;
+    model?: string;
+    fetch?: typeof fetch;
+    quotationSources?: string[];
+  } = {},
 ): Promise<{ content: LanguageResultContent; model: string }> {
   if (
     !["translate", "explain", "correct"].includes(input.mode) ||
@@ -379,6 +444,16 @@ export async function generateLanguageResult(
       503,
     );
   }
+  const quotationSources = options.quotationSources ?? [input.text];
+  if (
+    input.mode === "correct" &&
+    !quotationSources.some((text) => text.trim())
+  ) {
+    throw new LanguageProviderError(
+      "Cette remise ne contient pas de réponse écrite à relire.",
+      422,
+    );
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -394,10 +469,18 @@ export async function generateLanguageResult(
         body: JSON.stringify({
           model,
           store: false,
+          reasoning: { effort: "medium" },
           max_output_tokens: 6_000,
           input: [
             { role: "system", content: instructions },
-            { role: "user", content: JSON.stringify(input) },
+            {
+              role: "user",
+              content: JSON.stringify(
+                options.quotationSources
+                  ? { ...input, submittedAnswers: quotationSources }
+                  : input,
+              ),
+            },
           ],
           text: {
             format: {
@@ -431,12 +514,23 @@ export async function generateLanguageResult(
       );
     }
     const content = parseResponse(await readResponse(response), input.mode);
+    // Generated examples are read aloud; keep ordinary spelling in those fields.
+    // Do this only for new responses, without revalidating stored history differently.
+    for (const entry of content.entries) {
+      for (const example of entry.examples) {
+        example.ukrainian = example.ukrainian
+          .normalize("NFC")
+          .replace(/\u0301/gu, "");
+      }
+    }
     if (input.mode === "correct") {
-      const submittedText = normalizeQuotation(input.text);
+      const submittedTexts = quotationSources.map(normalizeQuotation);
       if (
         content.feedback.some(
           (feedback) =>
-            !submittedText.includes(normalizeQuotation(feedback.original)),
+            !submittedTexts.some((text) =>
+              text.includes(normalizeQuotation(feedback.original)),
+            ),
         )
       ) {
         throw invalidOutput();
