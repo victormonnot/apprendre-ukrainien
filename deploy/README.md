@@ -29,7 +29,7 @@ Les variables restent dans Coolify, jamais dans Git. `deploy/.env.example` décr
 
 Déployer puis vérifier que HTTP redirige vers HTTPS, qu’une visite HTTPS sans identifiants reçoit `401`, et qu’une connexion permet d’ouvrir **Mes données**. Le stockage `app_data`, monté sur `/app/.data`, appartient à cette ressource Coolify. Relever son nom Docker effectif dans **Persistent Storage** ou dans la configuration Compose générée : Coolify peut le préfixer. Conserver la même ressource et ce volume lors des redéploiements ; supprimer le stockage ou recréer la ressource avec un autre volume ne reprendrait pas les données.
 
-Avant chaque mise à jour, créer et télécharger une sauvegarde depuis **Mes données**, puis redéployer le commit choisi. Garder une seule instance `app` sur ce volume, sans déploiement parallèle ni Swarm ; Compose remplace le conteneur avec une interruption possible. Les sauvegardes hors VPS, la migration depuis le Mac et la compatibilité des migrations suivent les sections ci-dessous. La voix macOS Lesya reste indisponible sur Linux ; les audios déjà conservés restent lisibles.
+Avant chaque mise à jour, créer et télécharger une sauvegarde depuis **Mes données**, puis redéployer le commit choisi. Garder une seule instance `app` sur ce volume, sans déploiement parallèle ni Swarm ; Compose remplace le conteneur avec une interruption possible. Les sauvegardes hors VPS, la migration depuis le Mac et la compatibilité des migrations suivent les sections ci-dessous. Les audios déjà conservés restent lisibles.
 
 ## Préparer le serveur
 
@@ -64,7 +64,7 @@ openssl rand -hex 32
 
 Copier les 64 caractères dans `APP_PROXY_SECRET`. Compose fournit la même valeur à Caddy et à l’application. Caddy remplace tout en-tête `X-App-Proxy-Secret` reçu et retire l’en-tête d’authentification avant la transmission à Next.js. Le nom d’hôte et l’origine de la requête restent conservés ; l’application attend exactement `https://APP_HOST`.
 
-`OPENAI_API_KEY` est facultatif et reste une variable du serveur. Les cours, les exercices, les révisions et les données personnelles fonctionnent sans cette clé. Sur Linux, la voix macOS Lesya n’est pas disponible ; les fichiers audio déjà conservés restent lisibles. Les lecteurs de podcasts et de vidéos dépendent de leurs hébergeurs.
+`OPENAI_API_KEY` est facultatif et reste une variable du serveur. Les cours, les exercices, les révisions et les données personnelles fonctionnent sans cette clé. Elle permet de créer de nouveaux audios avec les voix masculine (Cedar) et féminine (Nova) ; sans elle, les fichiers audio déjà conservés restent lisibles. Les lecteurs de podcasts et de vidéos dépendent de leurs hébergeurs.
 
 Le fichier `deploy/.env` est exclu de Git et du contexte de construction Docker. Aucun secret ne doit être ajouté au Dockerfile ou aux arguments de construction.
 

@@ -100,42 +100,25 @@ async function hasLocalVoice(options: AudioProviderOptions): Promise<boolean> {
 export async function audioVoices(
   options: AudioProviderOptions = {},
 ): Promise<AudioVoice[]> {
-  const localAvailable = await hasLocalVoice(options);
   const openAIAvailable = Boolean(
     (options.apiKey ?? process.env.OPENAI_API_KEY)?.trim(),
   );
   return [
     {
-      id: "macos-lesya",
-      label: "Lesya",
-      provider: "macos",
-      available: localAvailable,
-      description:
-        "Voix de synthèse ukrainienne de macOS, créée localement sans service externe.",
-    },
-    {
-      id: "openai-marin",
-      label: "Marin",
-      provider: "openai",
-      available: openAIAvailable,
-      description:
-        "Voix de synthèse OpenAI. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
-    },
-    {
       id: "openai-cedar",
-      label: "Cedar",
+      label: "Masculine",
       provider: "openai",
       available: openAIAvailable,
       description:
-        "Voix de synthèse OpenAI. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
+        "Cedar · voix de synthèse OpenAI au timbre masculin. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
     },
     {
       id: "openai-nova",
-      label: "Nova · féminine",
+      label: "Féminine",
       provider: "openai",
       available: openAIAvailable,
       description:
-        "Voix de synthèse OpenAI au timbre féminin. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
+        "Nova · voix de synthèse OpenAI au timbre féminin. Le texte est envoyé au service ; la qualité en ukrainien reste à vérifier.",
     },
   ];
 }

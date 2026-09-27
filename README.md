@@ -232,7 +232,9 @@ révision. Le texte ukrainien de la référence est lu ; les lettres isolées ne
 pas présentées comme des sons de mots. Les exemples générés conservent le texte
 exact de leur fiche sauvegardée par le serveur.
 
-Le lecteur permet de mettre en pause, reprendre et réécouter. Le ralenti
+Le lecteur tient sur une ligne : lecture/pause, vitesse et choix de voix. Les
+commandes utilisent des icônes avec des libellés accessibles ; le choix de voix
+s’ouvre à la demande et se ferme aussi avec Échap. Le ralenti
 **0,75×** modifie la vitesse du même fichier, avec conservation de la hauteur de
 voix lorsque le navigateur le permet. Un seul lecteur fonctionne à la fois dans une page ;
 changer de passage ou quitter la page arrête l’ancienne lecture. Masquer l’onglet
@@ -257,20 +259,19 @@ résultat d’apprentissage. Les voix proposées sont des **synthèses**, avec l
 fournisseur affiché ; les enregistrements de locuteurs cités dans le cours restent
 une référence complémentaire.
 
-Sur macOS, **Lesya** est proposée lorsque la voix ukrainienne est installée et
-accessible par `/usr/bin/say`. Les fichiers sont alors créés sur le serveur local,
-sans clé ni transmission externe. `AUDIO_DISABLE_LOCAL=1` désactive cette
-possibilité. Sur un autre système, les sons déjà conservés restent lisibles et
-les voix OpenAI peuvent être configurées.
+Deux voix sont proposées : **Masculine** (Cedar), sélectionnée par défaut, et
+**Féminine** (Nova). Elles utilisent la même `OPENAI_API_KEY` que l’atelier. Le
+modèle audio est fixé à `gpt-4o-mini-tts-2025-12-15`, indépendamment de
+`OPENAI_MODEL` qui concerne les textes. Demander un son absent transmet son
+texte à OpenAI. La prononciation ukrainienne de ces voix doit être comparée sur
+les extraits ; leur présence dans la liste n’atteste pas d’une validation
+linguistique. Sans accès au fournisseur, les fichiers déjà conservés restent
+lisibles.
 
-**Marin**, **Cedar** et **Nova** (timbre féminin) utilisent la même
-`OPENAI_API_KEY` que l’atelier. Le modèle
-audio est fixé à `gpt-4o-mini-tts-2025-12-15`, indépendamment de `OPENAI_MODEL`
-qui concerne les textes. Choisir une voix OpenAI et demander un son absent
-transmet son texte au fournisseur. La prononciation ukrainienne de ces voix doit
-être comparée sur les extraits ; leur présence dans la liste n’atteste pas d’une
-validation linguistique. Une voix indisponible pour créer de nouveaux sons reste
-sélectionnable pour écouter ceux qui ont déjà été conservés.
+Les anciens fichiers Marin et Lesya sont conservés avec leurs métadonnées et
+restent accessibles par leur URL audio. Ces voix ne sont plus proposées pour de
+nouvelles écoutes dans l’interface. Une ancienne préférence Marin utilise
+maintenant Cedar ; une préférence Lesya utilise Nova, sans lancement automatique.
 
 Le premier appel crée un WAV privé dans la base SQLite ; les appels suivants
 réutilisent ce fichier pour le même texte normalisé, la même voix, le même modèle

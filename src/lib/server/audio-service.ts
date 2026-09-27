@@ -37,8 +37,7 @@ export async function getAudioCatalogue(): Promise<AudioCatalogue> {
   const voices = await audioVoices();
   return {
     voices,
-    defaultVoiceId:
-      voices.find((voice) => voice.available)?.id ?? "macos-lesya",
+    defaultVoiceId: "openai-cedar",
     groups: audioGroups,
   };
 }

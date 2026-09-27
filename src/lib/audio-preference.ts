@@ -4,42 +4,41 @@ const STORAGE_KEY = "ukrainian-audio-voice";
 const CHANGE_EVENT = "ukrainian-audio-voice-changed";
 let unsavedPreference: AudioVoiceId | undefined;
 
-function isVoice(value: unknown): value is AudioVoiceId {
-  return (
-    value === "macos-lesya" ||
-    value === "openai-marin" ||
-    value === "openai-cedar" ||
-    value === "openai-nova"
-  );
+function normalizeVoice(value: unknown): AudioVoiceId | null {
+  if (value === "openai-cedar" || value === "openai-marin")
+    return "openai-cedar";
+  if (value === "openai-nova" || value === "macos-lesya") return "openai-nova";
+  return null;
 }
 
 export function readAudioVoicePreference(): AudioVoiceId | null {
   if (unsavedPreference) return unsavedPreference;
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    return isVoice(stored) ? stored : null;
+    return normalizeVoice(window.localStorage.getItem(STORAGE_KEY));
   } catch {
     return null;
   }
 }
 
 export function saveAudioVoicePreference(voice: AudioVoiceId): void {
+  const selected = normalizeVoice(voice);
+  if (!selected) return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, voice);
+    window.localStorage.setItem(STORAGE_KEY, selected);
     unsavedPreference = undefined;
   } catch {
-    unsavedPreference = voice;
+    unsavedPreference = selected;
   }
   // The storage event only reaches other documents, so notify this page too.
-  window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: voice }));
+  window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: selected }));
 }
 
 export function subscribeAudioVoicePreference(
   listener: (voice: AudioVoiceId | null) => void,
 ): () => void {
   const onChange = (event: Event) => {
-    const voice: unknown = (event as CustomEvent<unknown>).detail;
-    if (isVoice(voice)) listener(voice);
+    const voice = normalizeVoice((event as CustomEvent<unknown>).detail);
+    if (voice) listener(voice);
   };
   const onStorage = (event: StorageEvent) => {
     if (event.key !== STORAGE_KEY) return;
@@ -48,9 +47,10 @@ export function subscribeAudioVoicePreference(
     } catch {
       return;
     }
-    if (event.newValue !== null && !isVoice(event.newValue)) return;
+    const voice = normalizeVoice(event.newValue);
+    if (event.newValue !== null && voice === null) return;
     unsavedPreference = undefined;
-    listener(event.newValue);
+    listener(voice);
   };
   window.addEventListener(CHANGE_EVENT, onChange);
   window.addEventListener("storage", onStorage);

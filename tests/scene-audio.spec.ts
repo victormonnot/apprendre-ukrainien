@@ -42,7 +42,11 @@ function seedSceneAudio() {
       cafeScenes.flatMap((scene) => scene.lines.map((line) => line.ukrainian)),
     );
     for (const text of texts)
-      for (const voice of ["macos-lesya", "openai-cedar"] as const)
+      for (const voice of [
+        "macos-lesya",
+        "openai-cedar",
+        "openai-nova",
+      ] as const)
         store.saveClip(user, describeAudio(voice, text), wave(), "audio/wav");
   } finally {
     store.close();
@@ -83,10 +87,14 @@ test.describe("guided scene audio", () => {
     await expect(player(page)).toHaveAttribute("data-audio-text", "Дякую!");
     expect(sources).toHaveLength(0);
     await player(page)
-      .getByLabel("Voix", { exact: true })
-      .selectOption("openai-cedar");
+      .getByRole("button", { name: "Choisir la voix", exact: true })
+      .click();
     await player(page)
-      .getByRole("button", { name: "Ralentir · 0,75×" })
+      .getByLabel("Voix", { exact: true })
+      .selectOption("openai-nova");
+    await expect(player(page).getByLabel("Voix", { exact: true })).toBeHidden();
+    await player(page)
+      .getByRole("button", { name: "Lecture ralentie" })
       .click();
     await listen(page)
       .getByRole("button", { name: "Écouter la conversation", exact: true })
@@ -106,9 +114,6 @@ test.describe("guided scene audio", () => {
       page.locator('[data-scene-line="maxime-welcome"]'),
     ).toHaveAttribute("aria-current", "true");
     await expect(player(page)).toHaveAttribute("data-audio-phase", "playing");
-    await expect(player(page).getByLabel("Voix", { exact: true })).toHaveValue(
-      "openai-cedar",
-    );
     expect(
       await player(page)
         .locator("audio")
@@ -123,10 +128,17 @@ test.describe("guided scene audio", () => {
       "anna-goodbye",
       "maxime-goodbye",
     ]);
-    expect(sources.every((source) => source.voiceId === "openai-cedar")).toBe(
+    expect(sources.every((source) => source.voiceId === "openai-nova")).toBe(
       true,
     );
     await expect(listen(page)).toHaveAttribute("data-scene-following", "false");
+    await player(page)
+      .getByRole("button", { name: "Choisir la voix", exact: true })
+      .click();
+    await expect(player(page).getByLabel("Voix", { exact: true })).toHaveValue(
+      "openai-nova",
+    );
+    await player(page).getByLabel("Voix", { exact: true }).press("Escape");
     await page.locator('[data-scene-line="anna-thanks"]').click();
     await player(page)
       .getByRole("button", { name: "Écouter « Дякую! »", exact: true })

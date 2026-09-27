@@ -102,46 +102,42 @@ test("audio descriptors normalize Ukrainian text and pin voice, model and instru
   );
 });
 
-test("voice availability checks the exact installed Ukrainian voice and keeps credentials private", async () => {
-  let calls = 0;
+test("the catalogue exposes only the two listening voices without enumerating local voices", async () => {
   const voices = await audioVoices({
     ...localOptions,
     apiKey: secret,
-    execFile: async (command, args, options) => {
-      calls += 1;
-      assert.equal(command, "/usr/bin/say");
-      assert.deepEqual(args, ["-v", "?"]);
-      assert.equal(options.shell, false);
-      assert.equal(options.timeout, 45_000);
-      return {
-        stdout: "Alex en_US # Hello!\nLesya               uk_UA # Вітаю!\n",
-      };
+    execFile: async () => {
+      assert.fail("the public catalogue must not enumerate retired voices");
     },
   });
-  assert.equal(calls, 1);
   assert.deepEqual(
-    Object.fromEntries(voices.map((voice) => [voice.id, voice.available])),
-    {
-      "macos-lesya": true,
-      "openai-marin": true,
-      "openai-cedar": true,
-      "openai-nova": true,
-    },
+    voices.map(({ id, label, provider, available }) => ({
+      id,
+      label,
+      provider,
+      available,
+    })),
+    [
+      {
+        id: "openai-cedar",
+        label: "Masculine",
+        provider: "openai",
+        available: true,
+      },
+      {
+        id: "openai-nova",
+        label: "Féminine",
+        provider: "openai",
+        available: true,
+      },
+    ],
   );
   assert.doesNotMatch(JSON.stringify(voices), new RegExp(secret));
-  for (const output of [
-    "Lesya en_US # Hello",
-    "OtherLesya uk_UA # Вітаю",
-    "Other uk_UA # Lesya",
-    "",
-  ]) {
-    const absent = await audioVoices({
-      ...localOptions,
-      apiKey: "",
-      execFile: async () => ({ stdout: output }),
-    });
-    assert.ok(absent.every((voice) => !voice.available));
-  }
+  const unconfigured = await audioVoices({ apiKey: "" });
+  assert.deepEqual(
+    unconfigured,
+    voices.map((voice) => ({ ...voice, available: false })),
+  );
 });
 
 test("local audio is unavailable off macOS, when disabled or when enumeration fails", async () => {
@@ -167,14 +163,29 @@ test("local audio is unavailable off macOS, when disabled or when enumeration fa
       failsWith(503, /pas disponible/),
     );
   }
-  const voices = await audioVoices({
-    ...localOptions,
-    apiKey: "",
-    execFile: async () => {
-      throw new Error("say executable unavailable");
-    },
-  });
-  assert.ok(voices.every((voice) => !voice.available));
+  for (const output of [
+    "Lesya en_US # Hello",
+    "OtherLesya uk_UA # Вітаю",
+    "Other uk_UA # Lesya",
+    "",
+  ]) {
+    await assert.rejects(
+      synthesizeAudio(localDescriptor, {
+        ...localOptions,
+        execFile: async () => ({ stdout: output }),
+      }),
+      failsWith(503, /pas disponible/),
+    );
+  }
+  await assert.rejects(
+    synthesizeAudio(localDescriptor, {
+      ...localOptions,
+      execFile: async () => {
+        throw new Error("say executable unavailable");
+      },
+    }),
+    failsWith(503, /pas disponible/),
+  );
 });
 
 test("local synthesis uses private input and output files, fixed shell-free arguments and cleans up", async () => {

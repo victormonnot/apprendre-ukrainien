@@ -91,11 +91,14 @@ function AudioPlayerSession({
 }: Props) {
   const id = useId();
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [expanded, setExpanded] = useState(!compact);
+  const [catalogueRequested, setCatalogueRequested] = useState(!compact);
+  const voiceMenuRef = useRef<HTMLDivElement>(null);
+  const voiceButtonRef = useRef<HTMLButtonElement>(null);
+  const voiceSelectRef = useRef<HTMLSelectElement>(null);
+  const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
   const [catalogue, setCatalogue] = useState<AudioCatalogue | null>(null);
   const [voiceId, setVoiceId] = useState<AudioVoiceId | null>(null);
   const voiceRef = useRef<AudioVoiceId | null>(null);
-  const [clip, setClip] = useState<AudioClip | null>(null);
   const clipRef = useRef<AudioClip | null>(null);
   const [phase, setPhase] = useState<AudioPhase>("idle");
   const phaseRef = useRef<AudioPhase>("idle");
@@ -121,6 +124,10 @@ function AudioPlayerSession({
   useEffect(() => {
     onPhaseChange?.(phase);
   }, [onPhaseChange, phase]);
+
+  useEffect(() => {
+    if (voiceMenuOpen && catalogue) voiceSelectRef.current?.focus();
+  }, [voiceMenuOpen, catalogue]);
 
   const transition = useCallback((next: AudioPhase) => {
     phaseRef.current = next;
@@ -190,7 +197,6 @@ function AudioPlayerSession({
         voiceRef.current = next;
         setVoiceId(next);
         clipRef.current = null;
-        setClip(null);
         setError(null);
       }),
     [catalogue, stop],
@@ -219,7 +225,7 @@ function AudioPlayerSession({
   }, [clearTimer, id, pause]);
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!catalogueRequested) return;
     let cancelled = false;
     loadAudioCatalogue()
       .then((value) => {
@@ -242,7 +248,7 @@ function AudioPlayerSession({
     return () => {
       cancelled = true;
     };
-  }, [expanded]);
+  }, [catalogueRequested]);
 
   const playFile = async (token: number, restart: boolean) => {
     const audio = audioRef.current;
@@ -289,7 +295,7 @@ function AudioPlayerSession({
   };
 
   const start = async () => {
-    setExpanded(true);
+    setCatalogueRequested(true);
     setError(null);
     claim();
     if (phaseRef.current === "paused-gap") {
@@ -311,14 +317,13 @@ function AudioPlayerSession({
         const selected = voiceRef.current ?? preferredVoice(available);
         if (!selected)
           throw new Error(
-            "Aucune voix n’est disponible. Consulte les indications ci-dessous puis actualise les voix.",
+            "Aucune voix n’est disponible. Ouvre le choix de voix pour actualiser.",
           );
         voiceRef.current = selected;
         setVoiceId(selected);
         known = await prepareAudio(source, selected, abort.signal);
         if (!mounted.current || token !== operation.current) return;
         clipRef.current = known;
-        setClip(known);
         if (audioRef.current) {
           audioRef.current.src = known.url;
           audioRef.current.load();
@@ -372,7 +377,6 @@ function AudioPlayerSession({
         voiceRef.current = selected;
         setVoiceId(selected);
         clipRef.current = null;
-        setClip(null);
       }
     } catch (failure) {
       if (mounted.current)
@@ -386,25 +390,59 @@ function AudioPlayerSession({
 
   const active = phase === "playing" || phase === "gap";
   const resumable = phase === "paused" || phase === "paused-gap";
-  const voice = catalogue?.voices.find((item) => item.id === voiceId);
+  const action = active
+    ? "Mettre en pause"
+    : resumable
+      ? "Reprendre"
+      : phase === "loading"
+        ? "Préparation de l’audio"
+        : phase === "error"
+          ? "Réessayer"
+          : phase === "finished"
+            ? "Réécouter"
+            : "Écouter";
   const status =
     phase === "loading"
       ? "Préparation de l’audio…"
       : phase === "gap"
-        ? `À toi de répéter · ${remaining} s avant la prochaine écoute`
-        : phase === "paused-gap"
-          ? "Pause · reprends quand tu es prêt à répéter."
+        ? `À toi · ${remaining} s`
+        : phase === "paused-gap" || phase === "paused"
+          ? "En pause"
           : phase === "playing"
             ? mode === "shadow"
-              ? "Répète en même temps que la voix."
-              : "Écoute la voix."
-            : phase === "paused"
-              ? "Lecture en pause."
-              : phase === "finished"
-                ? mode === "repeat"
-                  ? "Série terminée. Tu peux refaire ces écoutes quand tu veux."
-                  : "Écoute terminée."
-                : "";
+              ? "Répète avec la voix"
+              : "Lecture en cours"
+            : phase === "finished"
+              ? "Écoute terminée"
+              : "";
+
+  const positionVoiceMenu = () => {
+    const button = voiceButtonRef.current;
+    const menu = voiceMenuRef.current;
+    if (!button || !menu) return;
+    const rect = button.getBoundingClientRect();
+    const bounds = menu.getBoundingClientRect();
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    const width = bounds.width || Math.min(14 * rem, window.innerWidth - 16);
+    const height = bounds.height || 10 * rem;
+    menu.style.left = `${Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8))}px`;
+    menu.style.top = `${Math.max(8, rect.bottom + height + 6 <= window.innerHeight ? rect.bottom + 6 : rect.top - height - 6)}px`;
+  };
+
+  useEffect(() => {
+    if (!voiceMenuOpen) return;
+    const dismiss = (event: Event) => {
+      const menu = voiceMenuRef.current;
+      if (event.target instanceof Node && menu?.contains(event.target)) return;
+      menu?.hidePopover();
+    };
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("scroll", dismiss, true);
+    return () => {
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("scroll", dismiss, true);
+    };
+  }, [voiceMenuOpen]);
 
   return (
     <div
@@ -431,149 +469,151 @@ function AudioPlayerSession({
           );
         }}
       />
-      {compact && !expanded ? (
+      <div className="audio-player-controls">
         <button
           type="button"
-          className="audio-listen-compact"
-          onClick={() => void start()}
-          aria-label={`Écouter « ${text} »`}
+          className="audio-primary audio-icon-button"
+          onClick={active ? pause : () => void start()}
+          disabled={phase === "loading"}
+          aria-label={`${action} « ${text} »`}
+          title={action}
         >
-          <span aria-hidden="true">▶</span> Écouter
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className={phase === "loading" ? "audio-spinner" : undefined}
+          >
+            {phase === "loading" ? (
+              <path d="M20 12a8 8 0 1 1-8-8" />
+            ) : active ? (
+              <>
+                <path d="M9 5v14M15 5v14" strokeWidth="3" />
+              </>
+            ) : phase === "finished" || phase === "error" ? (
+              <>
+                <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6" />
+              </>
+            ) : (
+              <path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none" />
+            )}
+          </svg>
         </button>
-      ) : (
-        <div className="audio-player-controls">
-          <div className="audio-player-topline">
-            <p className="audio-provenance">
-              Voix de synthèse
-              {clip
-                ? ` · ${clip.voiceLabel} (${clip.provider === "macos" ? "macOS" : "OpenAI"})`
-                : voice
-                  ? ` · ${voice.label} (${voice.provider === "macos" ? "macOS" : "OpenAI"})`
-                  : ""}
-            </p>
-            {compact && (
-              <button
-                type="button"
-                className="audio-collapse"
-                onClick={() => {
-                  stop();
-                  setExpanded(false);
-                }}
-                aria-label={`Fermer le lecteur de « ${text} »`}
-              >
-                Fermer
-              </button>
-            )}
-          </div>
-          <div className="audio-main-controls">
-            <button
-              type="button"
-              className="audio-primary"
-              onClick={active ? pause : () => void start()}
-              disabled={phase === "loading"}
-              aria-label={`${active ? "Mettre en pause" : resumable ? "Reprendre" : phase === "error" ? "Réessayer" : phase === "finished" ? "Réécouter" : "Écouter"} « ${text} »`}
-            >
-              {active
-                ? "Pause"
-                : resumable
-                  ? "Reprendre"
-                  : phase === "loading"
-                    ? "Préparation…"
-                    : phase === "error"
-                      ? "Réessayer"
-                      : phase === "finished"
-                        ? "Réécouter"
-                        : "Écouter"}
-            </button>
-            {phase !== "idle" && phase !== "finished" && (
-              <button type="button" onClick={stop}>
-                Arrêter
-              </button>
-            )}
-            <fieldset className="audio-speed">
-              <legend>Vitesse</legend>
-              {[1, 0.75].map((speed) => (
-                <button
-                  key={speed}
-                  type="button"
-                  aria-pressed={rate === speed}
-                  onClick={() => {
-                    rateRef.current = speed;
-                    setRate(speed);
-                    if (audioRef.current) audioRef.current.playbackRate = speed;
-                    onRateChange?.(speed);
-                  }}
-                >
-                  {speed === 1 ? "Normale · 1×" : "Ralentir · 0,75×"}
-                </button>
-              ))}
-            </fieldset>
-          </div>
-          <div className="audio-voice-controls">
-            <label htmlFor={`${id}-voice`}>Voix</label>
-            <select
-              id={`${id}-voice`}
-              value={voiceId ?? ""}
-              onChange={(event) => {
-                claim();
-                const selected = event.target.value as AudioVoiceId;
-                saveAudioVoicePreference(selected);
-              }}
-              disabled={!catalogue?.voices.length}
-            >
-              {!voiceId && (
-                <option value="">
-                  {catalogue
-                    ? "Aucune voix disponible"
-                    : "Chargement des voix…"}
-                </option>
-              )}
-              {catalogue?.voices.map((item) => (
-                <option value={item.id} key={item.id}>
-                  {item.label}
-                  {item.available ? "" : " — création indisponible"}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="audio-refresh"
-              onClick={() => void refreshVoices()}
-            >
-              Actualiser les voix
-            </button>
-          </div>
-          {voice && (
-            <p className="audio-voice-description">{voice.description}</p>
+        {phase !== "idle" && phase !== "finished" && (
+          <button
+            type="button"
+            className="audio-icon-button"
+            onClick={stop}
+            aria-label="Arrêter"
+            title="Arrêter"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect
+                x="6"
+                y="6"
+                width="12"
+                height="12"
+                rx="1"
+                fill="currentColor"
+                stroke="none"
+              />
+            </svg>
+          </button>
+        )}
+        <button
+          type="button"
+          className="audio-speed"
+          aria-label="Lecture ralentie"
+          title={rate === 1 ? "Ralentir · 0,75×" : "Vitesse normale · 1×"}
+          aria-pressed={rate === 0.75}
+          onClick={() => {
+            const next = rate === 1 ? 0.75 : 1;
+            rateRef.current = next;
+            setRate(next);
+            if (audioRef.current) audioRef.current.playbackRate = next;
+            onRateChange?.(next);
+          }}
+        >
+          {rate === 1 ? "1×" : "0,75×"}
+        </button>
+        <button
+          ref={voiceButtonRef}
+          type="button"
+          className="audio-icon-button audio-voice-button"
+          aria-label="Choisir la voix"
+          title="Choisir la voix"
+          popoverTarget={`${id}-voices`}
+          aria-expanded={voiceMenuOpen}
+          onClick={() => {
+            setCatalogueRequested(true);
+            positionVoiceMenu();
+          }}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h5m6 0h5M4 17h9m6 0h1" />
+            <circle cx="12" cy="7" r="3" />
+            <circle cx="16" cy="17" r="3" />
+          </svg>
+        </button>
+      </div>
+      <div
+        ref={voiceMenuRef}
+        id={`${id}-voices`}
+        className="audio-voice-menu"
+        popover="auto"
+        onToggle={(event) => {
+          if (event.newState === "open") positionVoiceMenu();
+          setVoiceMenuOpen(event.newState === "open");
+        }}
+      >
+        <label htmlFor={`${id}-voice`}>Voix</label>
+        <select
+          ref={voiceSelectRef}
+          id={`${id}-voice`}
+          value={voiceId ?? ""}
+          onChange={(event) => {
+            claim();
+            saveAudioVoicePreference(event.target.value as AudioVoiceId);
+            voiceMenuRef.current?.hidePopover();
+            voiceButtonRef.current?.focus();
+          }}
+          disabled={!catalogue?.voices.length}
+        >
+          {!voiceId && (
+            <option value="">
+              {catalogue ? "Indisponible" : "Chargement…"}
+            </option>
           )}
-          {catalogue?.voices.some((item) => !item.available) && (
-            <details className="audio-availability">
-              <summary>Disponibilité des voix</summary>
-              <p>
-                Les sons déjà créés restent lisibles. Choisis une voix pour
-                essayer son audio.
-              </p>
-              <ul>
-                {catalogue.voices.map((item) => (
-                  <li key={item.id}>
-                    <strong>{item.label}</strong> : {item.description}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          <p className="audio-status" role="status">
-            {status}
-            {mode === "repeat" && phase !== "idle"
-              ? ` · Écoute ${cycle}/${total}`
-              : ""}
-          </p>
-          {error && (
-            <p className="audio-error" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
+          {catalogue?.voices.map((item) => (
+            <option value={item.id} key={item.id}>
+              {item.label}
+            </option>
+          ))}
+        </select>
+        <p>Voix de synthèse · OpenAI</p>
+        {(error || catalogue?.voices.every((item) => !item.available)) && (
+          <button
+            type="button"
+            className="audio-refresh"
+            onClick={() => void refreshVoices()}
+            aria-label="Actualiser les voix"
+          >
+            Actualiser
+          </button>
+        )}
+      </div>
+      <p
+        className={`audio-status${mode === "listen" ? " audio-status-discreet" : ""}`}
+        role="status"
+      >
+        {status}
+        {mode === "repeat" && phase !== "idle"
+          ? ` · Écoute ${cycle}/${total}`
+          : ""}
+      </p>
+      {error && (
+        <p className="audio-error" role="alert">
+          {error}
+        </p>
       )}
     </div>
   );

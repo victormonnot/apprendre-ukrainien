@@ -178,7 +178,13 @@ test("audio remains available byte for byte after closing and reopening the stor
   const store = openAudioStore(context.directory, { now: context.now });
   const bytes = wave(48);
   bytes[44] = 42;
-  const clips = [descriptor, novaDescriptor].map((voice) => ({
+  const descriptors: AudioDescriptor[] = [
+    descriptor,
+    novaDescriptor,
+    { ...novaDescriptor, voiceId: "openai-marin", voiceLabel: "Marin" },
+    { ...novaDescriptor, voiceId: "openai-cedar", voiceLabel: "Cedar" },
+  ];
+  const clips = descriptors.map((voice) => ({
     voice,
     clip: store.saveClip(userId, voice, bytes, "audio/wav"),
   }));

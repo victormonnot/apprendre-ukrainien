@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from "./fixtures";
+import { expect, test, type APIRequestContext, type Locator } from "./fixtures";
 import { openAudioStore } from "../src/lib/server/audio-store";
 import { openLearningStore } from "../src/lib/server/learning-store";
 import { describeAudio } from "../src/lib/server/audio-provider";
@@ -64,6 +64,37 @@ const kava = {
   voiceId: "macos-lesya",
 };
 
+async function voiceSettings(player: Locator) {
+  const toggle = player.getByRole("button", {
+    name: "Choisir la voix",
+    exact: true,
+  });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true")
+    await toggle.click();
+  const select = player.getByLabel("Voix", { exact: true });
+  await expect(select).toBeVisible();
+  return select;
+}
+
+async function chooseVoice(
+  player: Locator,
+  voice: "openai-cedar" | "openai-nova",
+) {
+  const select = await voiceSettings(player);
+  await select.selectOption(voice);
+  await expect(select).toBeHidden();
+}
+
+async function expectVoice(
+  player: Locator,
+  voice: "openai-cedar" | "openai-nova",
+) {
+  const select = await voiceSettings(player);
+  await expect(select).toHaveValue(voice);
+  await select.press("Escape");
+  await expect(select).toBeHidden();
+}
+
 test.describe("audio playback and repetition", () => {
   test.beforeAll(seedAudio);
 
@@ -78,6 +109,16 @@ test.describe("audio playback and repetition", () => {
     );
     const catalogue = await (await request.get("/api/audio")).json();
     expect(
+      catalogue.voices.map((voice: { id: string; label: string }) => [
+        voice.id,
+        voice.label,
+      ]),
+    ).toEqual([
+      ["openai-cedar", "Masculine"],
+      ["openai-nova", "Féminine"],
+    ]);
+    expect(catalogue.defaultVoiceId).toBe("openai-cedar");
+    expect(
       catalogue.voices.every(
         (voice: { available: boolean }) => !voice.available,
       ),
@@ -88,6 +129,11 @@ test.describe("audio playback and repetition", () => {
     expect(await (await post(request, baseURL, kava)).json()).toEqual(first);
     expect(first.text).toBe("кава");
     expect(first.provider).toBe("macos");
+    const oldMarin = await (
+      await post(request, baseURL, { ...kava, voiceId: "openai-marin" })
+    ).json();
+    expect(oldMarin.voiceId).toBe("openai-marin");
+    expect(await (await request.get(oldMarin.url)).body()).toEqual(wave());
     const file = await request.get(first.url);
     expect(file.status()).toBe(200);
     expect(await file.body()).toEqual(wave());
@@ -161,7 +207,10 @@ test.describe("audio playback and repetition", () => {
     }));
     expect(paused.paused).toBe(true);
     expect(paused.time).toBeGreaterThan(0);
-    await player.getByRole("button", { name: "Ralentir · 0,75×" }).click();
+    await player.getByRole("button", { name: "Lecture ralentie" }).click();
+    await expect(
+      player.getByRole("button", { name: "Lecture ralentie" }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(
       await audio.evaluate((element: HTMLAudioElement) => element.playbackRate),
     ).toBe(0.75);
@@ -177,7 +226,17 @@ test.describe("audio playback and repetition", () => {
       await audio.evaluate((element: HTMLAudioElement) => element.currentSrc),
     ).toBe(paused.url);
     expect(requests).toHaveLength(1);
-    await expect(player.locator(".audio-provenance")).toContainText("macOS");
+    expect(JSON.parse(requests[0]!).voiceId).toBe("openai-cedar");
+    await player.getByRole("button", { name: "Lecture ralentie" }).click();
+    await expect(
+      player.getByRole("button", { name: "Lecture ralentie" }),
+    ).toHaveAttribute("aria-pressed", "false");
+    expect(
+      await audio.evaluate((element: HTMLAudioElement) => element.playbackRate),
+    ).toBe(1);
+    expect(
+      await audio.evaluate((element: HTMLAudioElement) => element.currentSrc),
+    ).toBe(paused.url);
     if (isMobile) {
       await page.setViewportSize({ width: 320, height: 800 });
       expect(
@@ -277,6 +336,109 @@ test.describe("audio playback and repetition", () => {
     await expect(second).toBeHidden();
   });
 
+  test("compact controls keep one speed button and two keyboard-accessible voice choices", async ({
+    page,
+    isMobile,
+  }) => {
+    const requests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/audio") && request.method() === "POST")
+        requests.push(request.postData()!);
+    });
+    await page.goto("/parcours/01/vocabulaire");
+    if (isMobile) await page.setViewportSize({ width: 320, height: 800 });
+    const player = page
+      .locator('[data-audio-player][data-audio-text="кава"]')
+      .first();
+    const settings = player.getByRole("button", {
+      name: "Choisir la voix",
+      exact: true,
+    });
+    await expect(player.getByRole("button")).toHaveCount(3);
+    await expect(
+      player.getByRole("button", { name: "Lecture ralentie", exact: true }),
+    ).toHaveText("1×");
+    await expect(player.getByLabel("Voix", { exact: true })).toBeHidden();
+    const idleHeight = (await player.boundingBox())!.height;
+    expect(idleHeight).toBeLessThanOrEqual(64);
+    expect(requests).toHaveLength(0);
+
+    await settings.focus();
+    await settings.press("Enter");
+    const voice = player.getByLabel("Voix", { exact: true });
+    await expect(voice).toBeVisible();
+    await expect(voice).toHaveValue("openai-cedar");
+    await expect(voice).toBeFocused();
+    expect(
+      await voice
+        .locator("option")
+        .evaluateAll((options: HTMLOptionElement[]) =>
+          options.map((option) => option.value),
+        ),
+    ).toEqual(["openai-cedar", "openai-nova"]);
+    await expect(voice.locator("option").nth(0)).toHaveText(/^Masculine/);
+    await expect(voice.locator("option").nth(1)).toHaveText(/^Féminine/);
+    await expect(
+      player.getByText("Voix de synthèse · OpenAI", { exact: true }),
+    ).toBeVisible();
+    await voice.press("Escape");
+    await expect(voice).toBeHidden();
+    await expect(settings).toBeFocused();
+    expect((await player.boundingBox())!.height).toBe(idleHeight);
+    expect(requests).toHaveLength(0);
+
+    await settings.press("Enter");
+    await expect(voice).toBeFocused();
+    // The OS select picker is not consistently driven by arrows in headless macOS.
+    // Opening, focus and dismissal are covered with real keyboard input above.
+    await voice.selectOption("openai-nova");
+    await expect(voice).toBeHidden();
+    await expect(settings).toBeFocused();
+    expect(
+      await page.evaluate(() => localStorage.getItem("ukrainian-audio-voice")),
+    ).toBe("openai-nova");
+    expect(requests).toHaveLength(0);
+    await player
+      .getByRole("button", { name: "Écouter « кава »", exact: true })
+      .click();
+    await expect(player).toHaveAttribute("data-audio-phase", "playing");
+    await expect(player.getByRole("button")).toHaveCount(4);
+    expect((await player.boundingBox())!.height).toBeLessThanOrEqual(64);
+    await expect(
+      player.getByText("Voix de synthèse · OpenAI", { exact: true }),
+    ).toBeHidden();
+    await player
+      .getByRole("button", { name: "Lecture ralentie", exact: true })
+      .click();
+    await expect(
+      player.getByRole("button", { name: "Lecture ralentie", exact: true }),
+    ).toHaveText("0,75×");
+    expect(requests).toHaveLength(1);
+    expect(JSON.parse(requests[0]!).voiceId).toBe("openai-nova");
+    await player.getByRole("button", { name: "Arrêter", exact: true }).click();
+    await expect(player).toHaveAttribute("data-audio-phase", "idle");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "20px";
+    });
+    await settings.click();
+    await expect(voice).toBeVisible();
+    const menu = await player.locator(".audio-voice-menu").boundingBox();
+    const viewport = page.viewportSize()!;
+    expect(menu!.x).toBeGreaterThanOrEqual(8);
+    expect(menu!.x + menu!.width).toBeLessThanOrEqual(viewport.width - 8);
+    expect(menu!.y).toBeGreaterThanOrEqual(8);
+    expect(menu!.y + menu!.height).toBeLessThanOrEqual(viewport.height - 8);
+    await page.setViewportSize({ width: 320, height: 810 });
+    await expect(voice).toBeHidden();
+    expect(requests).toHaveLength(1);
+  });
+
   test("voice changes reach opened players and other tabs without starting audio", async ({
     page,
     context,
@@ -307,15 +469,11 @@ test.describe("audio playback and repetition", () => {
       .getByRole("button", { name: "Écouter « мова »", exact: true })
       .click();
     await expect(second).toHaveAttribute("data-audio-phase", "playing");
-    await second
-      .getByLabel("Voix", { exact: true })
-      .selectOption("openai-cedar");
-    await expect(first.getByLabel("Voix", { exact: true })).toHaveValue(
-      "openai-cedar",
-    );
+    await chooseVoice(second, "openai-nova");
+    await expectVoice(first, "openai-nova");
     await expect(first).toHaveAttribute("data-audio-phase", "idle");
     await expect(second).toHaveAttribute("data-audio-phase", "idle");
-    expect(voices).toEqual(["macos-lesya", "macos-lesya"]);
+    expect(voices).toEqual(["openai-cedar", "openai-cedar"]);
     expect(
       await page
         .locator("audio")
@@ -328,9 +486,9 @@ test.describe("audio playback and repetition", () => {
       .getByRole("button", { name: "Écouter « кава »", exact: true })
       .click();
     await expect(first).toHaveAttribute("data-audio-phase", "playing");
-    expect(voices).toEqual(["macos-lesya", "macos-lesya", "openai-cedar"]);
-    const cedarFile = await first.locator("audio").getAttribute("src");
-    expect(cedarFile).not.toBe(originalFile);
+    expect(voices).toEqual(["openai-cedar", "openai-cedar", "openai-nova"]);
+    const novaFile = await first.locator("audio").getAttribute("src");
+    expect(novaFile).not.toBe(originalFile);
     await first
       .getByRole("button", { name: "Mettre en pause « кава »", exact: true })
       .click();
@@ -347,36 +505,26 @@ test.describe("audio playback and repetition", () => {
       window.dispatchEvent(
         new StorageEvent("storage", {
           key: "ukrainian-audio-voice",
-          newValue: "openai-nova",
+          newValue: "openai-cedar",
           storageArea: sessionStorage,
         }),
       );
     });
-    await expect(first.getByLabel("Voix", { exact: true })).toHaveValue(
-      "openai-cedar",
-    );
+    await expectVoice(first, "openai-nova");
     await expect(first).toHaveAttribute("data-audio-phase", "paused");
-    expect(await first.locator("audio").getAttribute("src")).toBe(cedarFile);
+    expect(await first.locator("audio").getAttribute("src")).toBe(novaFile);
 
     const other = await context.newPage();
     try {
       await other.goto("/studio?element=01-mot-kava");
       const otherPlayer = other.locator("[data-audio-player]");
-      await expect(otherPlayer.getByLabel("Voix", { exact: true })).toHaveValue(
-        "openai-cedar",
-      );
-      await otherPlayer
-        .getByLabel("Voix", { exact: true })
-        .selectOption("openai-nova");
-      await expect(first.getByLabel("Voix", { exact: true })).toHaveValue(
-        "openai-nova",
-      );
-      await expect(second.getByLabel("Voix", { exact: true })).toHaveValue(
-        "openai-nova",
-      );
+      await expectVoice(otherPlayer, "openai-nova");
+      await chooseVoice(otherPlayer, "openai-cedar");
+      await expectVoice(first, "openai-cedar");
+      await expectVoice(second, "openai-cedar");
       await expect(first).toHaveAttribute("data-audio-phase", "idle");
       await expect(otherPlayer).toHaveAttribute("data-audio-phase", "idle");
-      expect(voices).toEqual(["macos-lesya", "macos-lesya", "openai-cedar"]);
+      expect(voices).toEqual(["openai-cedar", "openai-cedar", "openai-nova"]);
     } finally {
       await other.close();
     }
@@ -385,22 +533,12 @@ test.describe("audio playback and repetition", () => {
       .getByRole("button", { name: "Écouter « кава »", exact: true })
       .click();
     await expect(first).toHaveAttribute("data-audio-phase", "playing");
-    expect(voices.at(-1)).toBe("openai-nova");
-    await second
-      .getByLabel("Voix", { exact: true })
-      .selectOption("macos-lesya");
-    await expect(first).toHaveAttribute("data-audio-phase", "idle");
-    await first
-      .getByRole("button", { name: "Écouter « кава »", exact: true })
-      .click();
-    await expect(first).toHaveAttribute("data-audio-phase", "playing");
     expect(await first.locator("audio").getAttribute("src")).toBe(originalFile);
     expect(voices).toEqual([
-      "macos-lesya",
-      "macos-lesya",
+      "openai-cedar",
       "openai-cedar",
       "openai-nova",
-      "macos-lesya",
+      "openai-cedar",
     ]);
   });
 
