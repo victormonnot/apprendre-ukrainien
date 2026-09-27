@@ -66,12 +66,11 @@ const kava = {
 
 async function voiceSettings(player: Locator) {
   const toggle = player.getByRole("button", {
-    name: "Choisir la voix",
+    name: "Vitesse et voix",
     exact: true,
   });
-  if ((await toggle.getAttribute("aria-expanded")) !== "true")
-    await toggle.click();
   const select = player.getByLabel("Voix", { exact: true });
+  if (!(await select.isVisible())) await toggle.click();
   await expect(select).toBeVisible();
   return select;
 }
@@ -93,6 +92,9 @@ async function expectVoice(
   await expect(select).toHaveValue(voice);
   await select.press("Escape");
   await expect(select).toBeHidden();
+  await expect(
+    player.getByRole("button", { name: "Vitesse et voix", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
 }
 
 test.describe("audio playback and repetition", () => {
@@ -207,6 +209,7 @@ test.describe("audio playback and repetition", () => {
     }));
     expect(paused.paused).toBe(true);
     expect(paused.time).toBeGreaterThan(0);
+    await voiceSettings(player);
     await player.getByRole("button", { name: "Lecture ralentie" }).click();
     await expect(
       player.getByRole("button", { name: "Lecture ralentie" }),
@@ -214,6 +217,9 @@ test.describe("audio playback and repetition", () => {
     expect(
       await audio.evaluate((element: HTMLAudioElement) => element.playbackRate),
     ).toBe(0.75);
+    await player
+      .getByRole("button", { name: "Lecture ralentie" })
+      .press("Escape");
     await player
       .getByRole("button", { name: "Reprendre « кава »", exact: true })
       .click();
@@ -227,6 +233,7 @@ test.describe("audio playback and repetition", () => {
     ).toBe(paused.url);
     expect(requests).toHaveLength(1);
     expect(JSON.parse(requests[0]!).voiceId).toBe("openai-cedar");
+    await voiceSettings(player);
     await player.getByRole("button", { name: "Lecture ralentie" }).click();
     await expect(
       player.getByRole("button", { name: "Lecture ralentie" }),
@@ -245,6 +252,7 @@ test.describe("audio playback and repetition", () => {
         ),
       ).toBe(true);
     }
+    await voiceSettings(player);
     await player.getByRole("button", { name: "Arrêter", exact: true }).click();
   });
 
@@ -336,7 +344,7 @@ test.describe("audio playback and repetition", () => {
     await expect(second).toBeHidden();
   });
 
-  test("compact controls keep one speed button and two keyboard-accessible voice choices", async ({
+  test("compact listen button exposes speed and two voice choices in its keyboard-accessible menu", async ({
     page,
     isMobile,
   }) => {
@@ -351,13 +359,18 @@ test.describe("audio playback and repetition", () => {
       .locator('[data-audio-player][data-audio-text="кава"]')
       .first();
     const settings = player.getByRole("button", {
-      name: "Choisir la voix",
+      name: "Vitesse et voix",
       exact: true,
     });
-    await expect(player.getByRole("button")).toHaveCount(3);
+    await expect(player.getByRole("button")).toHaveCount(2);
     await expect(
-      player.getByRole("button", { name: "Lecture ralentie", exact: true }),
-    ).toHaveText("1×");
+      player.getByRole("button", { name: "Écouter « кава »", exact: true }),
+    ).toHaveText("Écouter");
+    const speed = player.getByRole("button", {
+      name: "Lecture ralentie",
+      exact: true,
+    });
+    await expect(speed).toBeHidden();
     await expect(player.getByLabel("Voix", { exact: true })).toBeHidden();
     const idleHeight = (await player.boundingBox())!.height;
     expect(idleHeight).toBeLessThanOrEqual(64);
@@ -368,7 +381,8 @@ test.describe("audio playback and repetition", () => {
     const voice = player.getByLabel("Voix", { exact: true });
     await expect(voice).toBeVisible();
     await expect(voice).toHaveValue("openai-cedar");
-    await expect(voice).toBeFocused();
+    await expect(speed).toBeFocused();
+    await expect(speed).toHaveText("Vitesse · 1×");
     expect(
       await voice
         .locator("option")
@@ -381,6 +395,8 @@ test.describe("audio playback and repetition", () => {
     await expect(
       player.getByText("Voix de synthèse · OpenAI", { exact: true }),
     ).toBeVisible();
+    await speed.press("Tab");
+    await expect(voice).toBeFocused();
     await voice.press("Escape");
     await expect(voice).toBeHidden();
     await expect(settings).toBeFocused();
@@ -388,6 +404,8 @@ test.describe("audio playback and repetition", () => {
     expect(requests).toHaveLength(0);
 
     await settings.press("Enter");
+    await expect(speed).toBeFocused();
+    await speed.press("Tab");
     await expect(voice).toBeFocused();
     // The OS select picker is not consistently driven by arrows in headless macOS.
     // Opening, focus and dismissal are covered with real keyboard input above.
@@ -402,17 +420,22 @@ test.describe("audio playback and repetition", () => {
       .getByRole("button", { name: "Écouter « кава »", exact: true })
       .click();
     await expect(player).toHaveAttribute("data-audio-phase", "playing");
-    await expect(player.getByRole("button")).toHaveCount(4);
+    await expect(player.getByRole("button")).toHaveCount(2);
+    await expect(
+      player.getByRole("button", {
+        name: "Mettre en pause « кава »",
+        exact: true,
+      }),
+    ).toHaveText("Pause");
     expect((await player.boundingBox())!.height).toBeLessThanOrEqual(64);
     await expect(
       player.getByText("Voix de synthèse · OpenAI", { exact: true }),
     ).toBeHidden();
-    await player
-      .getByRole("button", { name: "Lecture ralentie", exact: true })
-      .click();
+    await voiceSettings(player);
+    await speed.click();
     await expect(
       player.getByRole("button", { name: "Lecture ralentie", exact: true }),
-    ).toHaveText("0,75×");
+    ).toHaveText("Vitesse · 0,75×");
     expect(requests).toHaveLength(1);
     expect(JSON.parse(requests[0]!).voiceId).toBe("openai-nova");
     await player.getByRole("button", { name: "Arrêter", exact: true }).click();
@@ -426,6 +449,14 @@ test.describe("audio playback and repetition", () => {
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "20px";
     });
+    await settings.scrollIntoViewIfNeeded();
+    // Flush the zoom-induced layout/scroll before opening the dismiss-on-scroll menu.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
     await settings.click();
     await expect(voice).toBeVisible();
     const menu = await player.locator(".audio-voice-menu").boundingBox();

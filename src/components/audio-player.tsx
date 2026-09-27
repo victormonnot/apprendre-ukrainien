@@ -94,7 +94,7 @@ function AudioPlayerSession({
   const [catalogueRequested, setCatalogueRequested] = useState(!compact);
   const voiceMenuRef = useRef<HTMLDivElement>(null);
   const voiceButtonRef = useRef<HTMLButtonElement>(null);
-  const voiceSelectRef = useRef<HTMLSelectElement>(null);
+  const speedButtonRef = useRef<HTMLButtonElement>(null);
   const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
   const [catalogue, setCatalogue] = useState<AudioCatalogue | null>(null);
   const [voiceId, setVoiceId] = useState<AudioVoiceId | null>(null);
@@ -126,8 +126,8 @@ function AudioPlayerSession({
   }, [onPhaseChange, phase]);
 
   useEffect(() => {
-    if (voiceMenuOpen && catalogue) voiceSelectRef.current?.focus();
-  }, [voiceMenuOpen, catalogue]);
+    if (voiceMenuOpen) speedButtonRef.current?.focus({ preventScroll: true });
+  }, [voiceMenuOpen]);
 
   const transition = useCallback((next: AudioPhase) => {
     phaseRef.current = next;
@@ -401,6 +401,11 @@ function AudioPlayerSession({
           : phase === "finished"
             ? "Réécouter"
             : "Écouter";
+  const buttonLabel = active
+    ? "Pause"
+    : phase === "loading"
+      ? "Chargement"
+      : action;
   const status =
     phase === "loading"
       ? "Préparation de l’audio…"
@@ -416,7 +421,7 @@ function AudioPlayerSession({
               ? "Écoute terminée"
               : "";
 
-  const positionVoiceMenu = () => {
+  const positionVoiceMenu = useCallback(() => {
     const button = voiceButtonRef.current;
     const menu = voiceMenuRef.current;
     if (!button || !menu) return;
@@ -427,14 +432,17 @@ function AudioPlayerSession({
     const height = bounds.height || 10 * rem;
     menu.style.left = `${Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8))}px`;
     menu.style.top = `${Math.max(8, rect.bottom + height + 6 <= window.innerHeight ? rect.bottom + 6 : rect.top - height - 6)}px`;
-  };
+  }, []);
 
   useEffect(() => {
-    if (!voiceMenuOpen) return;
+    if (voiceMenuOpen) positionVoiceMenu();
+  }, [voiceMenuOpen, catalogue, error, phase, positionVoiceMenu]);
+
+  useEffect(() => {
     const dismiss = (event: Event) => {
       const menu = voiceMenuRef.current;
       if (event.target instanceof Node && menu?.contains(event.target)) return;
-      menu?.hidePopover();
+      if (menu?.matches(":popover-open")) menu.hidePopover();
     };
     window.addEventListener("resize", dismiss);
     window.addEventListener("scroll", dismiss, true);
@@ -442,7 +450,7 @@ function AudioPlayerSession({
       window.removeEventListener("resize", dismiss);
       window.removeEventListener("scroll", dismiss, true);
     };
-  }, [voiceMenuOpen]);
+  }, []);
 
   return (
     <div
@@ -472,7 +480,7 @@ function AudioPlayerSession({
       <div className="audio-player-controls">
         <button
           type="button"
-          className="audio-primary audio-icon-button"
+          className="audio-primary"
           onClick={active ? pause : () => void start()}
           disabled={phase === "loading"}
           aria-label={`${action} « ${text} »`}
@@ -494,53 +502,19 @@ function AudioPlayerSession({
                 <path d="M4 10a8 8 0 1 1 1 7M4 4v6h6" />
               </>
             ) : (
-              <path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none" />
+              <>
+                <path d="m11 5-5 4H3v6h3l5 4ZM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14" />
+              </>
             )}
           </svg>
-        </button>
-        {phase !== "idle" && phase !== "finished" && (
-          <button
-            type="button"
-            className="audio-icon-button"
-            onClick={stop}
-            aria-label="Arrêter"
-            title="Arrêter"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect
-                x="6"
-                y="6"
-                width="12"
-                height="12"
-                rx="1"
-                fill="currentColor"
-                stroke="none"
-              />
-            </svg>
-          </button>
-        )}
-        <button
-          type="button"
-          className="audio-speed"
-          aria-label="Lecture ralentie"
-          title={rate === 1 ? "Ralentir · 0,75×" : "Vitesse normale · 1×"}
-          aria-pressed={rate === 0.75}
-          onClick={() => {
-            const next = rate === 1 ? 0.75 : 1;
-            rateRef.current = next;
-            setRate(next);
-            if (audioRef.current) audioRef.current.playbackRate = next;
-            onRateChange?.(next);
-          }}
-        >
-          {rate === 1 ? "1×" : "0,75×"}
+          <span>{buttonLabel}</span>
         </button>
         <button
           ref={voiceButtonRef}
           type="button"
           className="audio-icon-button audio-voice-button"
-          aria-label="Choisir la voix"
-          title="Choisir la voix"
+          aria-label="Vitesse et voix"
+          title="Vitesse et voix"
           popoverTarget={`${id}-voices`}
           aria-expanded={voiceMenuOpen}
           onClick={() => {
@@ -549,9 +523,7 @@ function AudioPlayerSession({
           }}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h5m6 0h5M4 17h9m6 0h1" />
-            <circle cx="12" cy="7" r="3" />
-            <circle cx="16" cy="17" r="3" />
+            <path d="m6 9 6 6 6-6" />
           </svg>
         </button>
       </div>
@@ -565,16 +537,32 @@ function AudioPlayerSession({
           setVoiceMenuOpen(event.newState === "open");
         }}
       >
+        <button
+          ref={speedButtonRef}
+          type="button"
+          className="audio-speed"
+          aria-label="Lecture ralentie"
+          title={rate === 1 ? "Ralentir · 0,75×" : "Vitesse normale · 1×"}
+          aria-pressed={rate === 0.75}
+          onClick={() => {
+            const next = rate === 1 ? 0.75 : 1;
+            rateRef.current = next;
+            setRate(next);
+            if (audioRef.current) audioRef.current.playbackRate = next;
+            onRateChange?.(next);
+          }}
+        >
+          Vitesse · {rate === 1 ? "1×" : "0,75×"}
+        </button>
         <label htmlFor={`${id}-voice`}>Voix</label>
         <select
-          ref={voiceSelectRef}
           id={`${id}-voice`}
           value={voiceId ?? ""}
           onChange={(event) => {
             claim();
             saveAudioVoicePreference(event.target.value as AudioVoiceId);
             voiceMenuRef.current?.hidePopover();
-            voiceButtonRef.current?.focus();
+            voiceButtonRef.current?.focus({ preventScroll: true });
           }}
           disabled={!catalogue?.voices.length}
         >
@@ -589,6 +577,19 @@ function AudioPlayerSession({
             </option>
           ))}
         </select>
+        {phase !== "idle" && phase !== "finished" && (
+          <button
+            type="button"
+            className="audio-stop"
+            onClick={() => {
+              stop();
+              voiceMenuRef.current?.hidePopover();
+              voiceButtonRef.current?.focus({ preventScroll: true });
+            }}
+          >
+            Arrêter
+          </button>
+        )}
         <p>Voix de synthèse · OpenAI</p>
         {(error || catalogue?.voices.every((item) => !item.available)) && (
           <button

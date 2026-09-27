@@ -232,9 +232,9 @@ révision. Le texte ukrainien de la référence est lu ; les lettres isolées ne
 pas présentées comme des sons de mots. Les exemples générés conservent le texte
 exact de leur fiche sauvegardée par le serveur.
 
-Le lecteur tient sur une ligne : lecture/pause, vitesse et choix de voix. Les
-commandes utilisent des icônes avec des libellés accessibles ; le choix de voix
-s’ouvre à la demande et se ferme aussi avec Échap. Le ralenti
+Le lecteur présente un bouton bordé **Écouter**, puis **Pause** pendant la lecture.
+La flèche attenante ouvre le menu de vitesse, de voix et d’arrêt. Le menu se ferme
+aussi avec Échap. Les commandes gardent leurs libellés accessibles. Le ralenti
 **0,75×** modifie la vitesse du même fichier, avec conservation de la hauteur de
 voix lorsque le navigateur le permet. Un seul lecteur fonctionne à la fois dans une page ;
 changer de passage ou quitter la page arrête l’ancienne lecture. Masquer l’onglet

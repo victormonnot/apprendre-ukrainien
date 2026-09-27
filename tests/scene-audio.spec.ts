@@ -87,15 +87,21 @@ test.describe("guided scene audio", () => {
     await expect(player(page)).toHaveAttribute("data-audio-text", "Дякую!");
     expect(sources).toHaveLength(0);
     await player(page)
-      .getByRole("button", { name: "Choisir la voix", exact: true })
+      .getByRole("button", { name: "Vitesse et voix", exact: true })
       .click();
     await player(page)
       .getByLabel("Voix", { exact: true })
       .selectOption("openai-nova");
     await expect(player(page).getByLabel("Voix", { exact: true })).toBeHidden();
     await player(page)
+      .getByRole("button", { name: "Vitesse et voix", exact: true })
+      .click();
+    await player(page)
       .getByRole("button", { name: "Lecture ralentie" })
       .click();
+    await player(page)
+      .getByRole("button", { name: "Lecture ralentie" })
+      .press("Escape");
     await listen(page)
       .getByRole("button", { name: "Écouter la conversation", exact: true })
       .click();
@@ -133,7 +139,7 @@ test.describe("guided scene audio", () => {
     );
     await expect(listen(page)).toHaveAttribute("data-scene-following", "false");
     await player(page)
-      .getByRole("button", { name: "Choisir la voix", exact: true })
+      .getByRole("button", { name: "Vitesse et voix", exact: true })
       .click();
     await expect(player(page).getByLabel("Voix", { exact: true })).toHaveValue(
       "openai-nova",
