@@ -1,11 +1,21 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadReviews } from "@/lib/review-client";
 import type { ReviewOverview as Overview } from "@/lib/review-types";
 
 export function ReviewOverview() {
+  return (
+    <PersonalGate silent>
+      <ReviewOverviewContent />
+    </PersonalGate>
+  );
+}
+
+function ReviewOverviewContent() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {

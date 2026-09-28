@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
 import {
   useCallback,
   useEffect,
@@ -34,10 +36,14 @@ function equalAnswers(a: Record<string, string>, b: Record<string, string>) {
 function storageKey(scene: SceneDefinition, role: SceneRoleId) {
   return `cafe-draft:${scene.id}:${scene.variantId}:${scene.version}:${role}`;
 }
-function readCopy(scene: SceneDefinition, role: SceneRoleId): LocalCopy | null {
+function readCopy(
+  scene: SceneDefinition,
+  role: SceneRoleId,
+  storage: Storage,
+): LocalCopy | null {
   try {
     const copy = JSON.parse(
-      sessionStorage.getItem(storageKey(scene, role)) ?? "null",
+      storage.getItem(storageKey(scene, role)) ?? "null",
     ) as LocalCopy | null;
     if (
       !copy ||
@@ -86,6 +92,7 @@ export function ScenePractice({
   scene: SceneDefinition;
   beforeLeaveRef: RefObject<() => Promise<boolean>>;
 }) {
+  const storage = useWorkspaceStorage();
   const [role, setRole] = useState<SceneRoleId>("maxime");
   const [workspace, setWorkspace] = useState<SceneWorkspace | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -113,13 +120,13 @@ export function ScenePractice({
     (copy: LocalCopy | null) => {
       try {
         const key = storageKey(scene, role);
-        if (copy) sessionStorage.setItem(key, JSON.stringify(copy));
-        else sessionStorage.removeItem(key);
+        if (copy) storage.setItem(key, JSON.stringify(copy));
+        else storage.removeItem(key);
       } catch {
         /* The server remains the durable store; memory remains usable. */
       }
     },
-    [scene, role],
+    [scene, role, storage],
   );
 
   useEffect(() => {
@@ -134,7 +141,7 @@ export function ScenePractice({
     loadSceneWorkspace(scene.id, scene.variantId, role, controller.signal)
       .then((value) => {
         if (controller.signal.aborted) return;
-        const copy = readCopy(scene, role);
+        const copy = readCopy(scene, role, storage);
         const receivedSubmission =
           copy?.pending?.type === "submit" &&
           value.attempts.some(
@@ -186,7 +193,7 @@ export function ScenePractice({
         setLoading(false);
       });
     return () => controller.abort();
-  }, [scene, role, remember, reload]);
+  }, [scene, role, remember, reload, storage]);
 
   useEffect(() => {
     if (!workspace || loading || conflict) return;

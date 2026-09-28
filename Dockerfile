@@ -27,6 +27,9 @@ COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/migrations ./migrations
 COPY --from=build --chown=node:node /app/src/content ./src/content
 
+COPY --from=build --chown=node:node /app/scripts/account.ts ./scripts/account.ts
+COPY --from=build --chown=node:node /app/src/lib/server/auth-store.ts ./src/lib/server/auth-store.ts
+
 # Docker initializes a new named volume with this directory's ownership.
 RUN mkdir -p /app/.data && chown node:node /app/.data && chmod 700 /app/.data
 

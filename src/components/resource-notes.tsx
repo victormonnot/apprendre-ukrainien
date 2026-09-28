@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
 import { useEffect, useRef, useState } from "react";
 import { ResourceRequestError, updateResource } from "@/lib/resource-client";
 import {
@@ -11,9 +13,9 @@ import { useUnsavedWork } from "@/lib/use-unsaved-work";
 
 type NotesCommand = Extract<ResourceCommand, { type: "save-notes" }>;
 type Copy = { notes: string; revision: number; pending: NotesCommand | null };
-function readCopy(state: ResourceState): Copy | null {
+function readCopy(state: ResourceState, storage: Storage): Copy | null {
   try {
-    const raw = sessionStorage.getItem(`resource-notes:${state.resourceId}`);
+    const raw = storage.getItem(`resource-notes:${state.resourceId}`);
     if (!raw || raw.length > 100_000) return null;
     const copy = JSON.parse(raw) as Copy;
     if (
@@ -45,7 +47,8 @@ export function ResourceNotes({
   state: ResourceState;
   onState: (state: ResourceState) => void;
 }) {
-  const [copy] = useState(() => readCopy(state));
+  const storage = useWorkspaceStorage();
+  const [copy] = useState(() => readCopy(state, storage));
   const received =
     !!copy?.pending &&
     copy.notes === state.notes &&
@@ -90,7 +93,7 @@ export function ResourceNotes({
     try {
       const key = `resource-notes:${state.resourceId}`;
       if (dirty)
-        sessionStorage.setItem(
+        storage.setItem(
           key,
           JSON.stringify({
             notes,
@@ -98,11 +101,11 @@ export function ResourceNotes({
             pending,
           }),
         );
-      else sessionStorage.removeItem(key);
+      else storage.removeItem(key);
     } catch {
       /* A private browser may deny storage; keep the editor in memory. */
     }
-  }, [dirty, notes, saved.notesRevision, pending, state.resourceId]);
+  }, [dirty, notes, saved.notesRevision, pending, state.resourceId, storage]);
 
   async function save() {
     if (busyRef.current || conflict) return;

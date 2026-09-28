@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
 import { useEffect, useId, useState } from "react";
 import { useUnsavedWork } from "@/lib/use-unsaved-work";
 import { NoteConflictError } from "@/lib/learning-client";
@@ -70,10 +72,13 @@ function isReport(value: unknown): value is SelfReport {
   );
 }
 
-function readDraft(state: LearningDocumentState): NotebookDraft | null {
+function readDraft(
+  state: LearningDocumentState,
+  storage: Storage,
+): NotebookDraft | null {
   if (typeof window === "undefined") return null;
   try {
-    const stored = sessionStorage.getItem(draftKey(state));
+    const stored = storage.getItem(draftKey(state));
     if (!stored || stored.length > 100_000) return null;
     const value: unknown = JSON.parse(stored);
     if (!isRecord(value) || value.version !== 1) return null;
@@ -121,8 +126,9 @@ export function LearningNotebook({
   onSaveNote,
   onSaveSelfReport,
 }: LearningNotebookProps) {
+  const storage = useWorkspaceStorage();
   const id = useId();
-  const [restoredDraft] = useState(() => readDraft(state));
+  const [restoredDraft] = useState(() => readDraft(state, storage));
   const [savedNote, setSavedNote] = useState(
     restoredDraft?.note?.base ?? state.note,
   );
@@ -160,7 +166,7 @@ export function LearningNotebook({
     const key = draftKey(state);
     try {
       if (!noteDirty && !reportDirty) {
-        sessionStorage.removeItem(key);
+        storage.removeItem(key);
         return;
       }
       const draft: NotebookDraft = { version: 1 };
@@ -172,12 +178,13 @@ export function LearningNotebook({
           base: savedReport,
         };
       }
-      sessionStorage.setItem(key, JSON.stringify(draft));
+      storage.setItem(key, JSON.stringify(draft));
     } catch {
       // Temporary browser storage may be disabled or full; explicit saving still works.
     }
   }, [
     state,
+    storage,
     noteDirty,
     noteDraft,
     savedNote,

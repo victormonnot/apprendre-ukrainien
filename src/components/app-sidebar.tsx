@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "./auth-context";
 import { usePathname } from "next/navigation";
 
 const items = [
@@ -17,6 +18,7 @@ const items = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { enabled, account } = useAuth();
   return (
     <aside className="app-sidebar">
       <Link
@@ -32,7 +34,9 @@ export function AppSidebar() {
           <br /> l’ukrainien
         </span>
       </Link>
-      <p className="nav-label">Mon espace</p>
+      <p className="nav-label">
+        {enabled && !account ? "Découvrir" : "Mon espace"}
+      </p>
       <nav className="main-nav" aria-label="Navigation principale">
         {items.map((item) => (
           <Link
@@ -53,6 +57,22 @@ export function AppSidebar() {
           </Link>
         ))}
       </nav>
+      {enabled && (
+        <div className="sidebar-account">
+          <Link
+            href={account ? "/compte" : "/connexion"}
+            aria-current={
+              pathname === "/compte" || pathname === "/connexion"
+                ? "page"
+                : undefined
+            }
+          >
+            <span aria-hidden="true">◌</span>{" "}
+            {account ? account.displayName : "Se connecter"}
+          </Link>
+          {!account && <Link href="/inscription">Créer un compte</Link>}
+        </div>
+      )}
       <div className="sidebar-note">
         <span lang="uk">Крок за кроком</span>
         <p>Pas à pas.</p>

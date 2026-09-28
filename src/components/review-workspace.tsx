@@ -1,8 +1,12 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
+import { PersonalGate } from "./auth-context";
+
 import { AudioPlayer } from "@/components/audio-player";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import {
   loadReviews,
@@ -42,12 +46,12 @@ const ratingDescriptions: Record<ReviewRating, string> = {
   easy: "Réponse immédiate, sans aide",
 };
 
-function savedDrafts(): LocalDraft[] {
+function savedDrafts(storage: Storage): LocalDraft[] {
   const drafts: LocalDraft[] = [];
-  for (let index = 0; index < sessionStorage.length; index++) {
-    const key = sessionStorage.key(index);
+  for (let index = 0; index < storage.length; index++) {
+    const key = storage.key(index);
     if (!key?.startsWith(draftPrefix)) continue;
-    const answerText = sessionStorage.getItem(key);
+    const answerText = storage.getItem(key);
     const attemptId = key.slice(draftPrefix.length);
     if (
       attemptId.length > 0 &&
@@ -82,6 +86,15 @@ function intervalLabel(value: string, now: string) {
 }
 
 export function ReviewWorkspace() {
+  return (
+    <PersonalGate>
+      <ReviewWorkspaceContent />
+    </PersonalGate>
+  );
+}
+
+function ReviewWorkspaceContent() {
+  const storage = useWorkspaceStorage();
   const [overview, setOverview] = useState<ReviewOverview | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [recovered, setRecovered] = useState<LocalDraft[]>([]);
@@ -108,49 +121,52 @@ export function ReviewWorkspace() {
   const dirty = active?.status === "presented" && answerText.length > 0;
   useUnsavedWork(Boolean(dirty));
 
-  function applyOverview(next: ReviewOverview) {
-    const combined = new Map<string, string>();
-    try {
-      for (const draft of savedDrafts())
-        combined.set(draft.attemptId, draft.answerText);
-    } catch {
-      setStorageWarning(true);
-    }
-    for (const [attemptId, value] of memoryDrafts.current)
-      combined.set(attemptId, value);
-    for (const [attemptId, value] of combined) {
-      const saved =
-        next.active?.id === attemptId && next.active.status === "revealed"
-          ? next.active.answerText
-          : next.recent.find((entry) => entry.id === attemptId)?.answerText;
-      if (saved !== value) continue;
-      combined.delete(attemptId);
+  const applyOverview = useCallback(
+    (next: ReviewOverview) => {
+      const combined = new Map<string, string>();
       try {
-        sessionStorage.removeItem(draftPrefix + attemptId);
+        for (const draft of savedDrafts(storage))
+          combined.set(draft.attemptId, draft.answerText);
       } catch {
         setStorageWarning(true);
       }
-    }
-    memoryDrafts.current = combined;
-    const drafts = [...combined].map(([attemptId, value]) => ({
-      attemptId,
-      answerText: value,
-    }));
-    const current = next.active;
-    const local = drafts.find((draft) => draft.attemptId === current?.id);
-    setAnswerText(
-      current?.status === "presented" ? (local?.answerText ?? "") : "",
-    );
-    setRecovered(
-      drafts.filter(
-        (draft) =>
-          draft.attemptId !== current?.id ||
-          (current.status === "revealed" &&
-            draft.answerText !== current.answerText),
-      ),
-    );
-    setOverview(next);
-  }
+      for (const [attemptId, value] of memoryDrafts.current)
+        combined.set(attemptId, value);
+      for (const [attemptId, value] of combined) {
+        const saved =
+          next.active?.id === attemptId && next.active.status === "revealed"
+            ? next.active.answerText
+            : next.recent.find((entry) => entry.id === attemptId)?.answerText;
+        if (saved !== value) continue;
+        combined.delete(attemptId);
+        try {
+          storage.removeItem(draftPrefix + attemptId);
+        } catch {
+          setStorageWarning(true);
+        }
+      }
+      memoryDrafts.current = combined;
+      const drafts = [...combined].map(([attemptId, value]) => ({
+        attemptId,
+        answerText: value,
+      }));
+      const current = next.active;
+      const local = drafts.find((draft) => draft.attemptId === current?.id);
+      setAnswerText(
+        current?.status === "presented" ? (local?.answerText ?? "") : "",
+      );
+      setRecovered(
+        drafts.filter(
+          (draft) =>
+            draft.attemptId !== current?.id ||
+            (current.status === "revealed" &&
+              draft.answerText !== current.answerText),
+        ),
+      );
+      setOverview(next);
+    },
+    [storage],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -185,7 +201,7 @@ export function ReviewWorkspace() {
       // Leaving the page must not reserve another card after an in-flight rating.
       requestVersion.current += 1;
     };
-  }, [reload]);
+  }, [reload, applyOverview]);
 
   useEffect(() => {
     if (activeStatus === "revealed") answerHeading.current?.focus();
@@ -200,8 +216,8 @@ export function ReviewWorkspace() {
     if (value) memoryDrafts.current.set(active.id, value);
     else memoryDrafts.current.delete(active.id);
     try {
-      if (value) sessionStorage.setItem(draftPrefix + active.id, value);
-      else sessionStorage.removeItem(draftPrefix + active.id);
+      if (value) storage.setItem(draftPrefix + active.id, value);
+      else storage.removeItem(draftPrefix + active.id);
       setStorageWarning(false);
     } catch {
       setStorageWarning(true);
@@ -214,7 +230,7 @@ export function ReviewWorkspace() {
       drafts.filter((draft) => draft.attemptId !== attemptId),
     );
     try {
-      sessionStorage.removeItem(draftPrefix + attemptId);
+      storage.removeItem(draftPrefix + attemptId);
     } catch {
       setStorageWarning(true);
     }

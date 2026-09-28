@@ -27,7 +27,8 @@
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "test:e2e": "playwright test",
     "test:hosting": "node tests/hosting.mjs",
-    "test": "node --experimental-strip-types --test tests/unit/*.test.ts"
+    "test": "node --experimental-strip-types --test tests/unit/*.test.ts",
+    "account": "node --experimental-strip-types scripts/account.ts"
   },
   "dependencies": {
     "github-slugger": "2.0.0",

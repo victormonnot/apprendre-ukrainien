@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   agentRules: false,
   poweredByHeader: false,
   output: process.env.BUILD_STANDALONE === "1" ? "standalone" : undefined,
+  outputFileTracingExcludes: {
+    "/*": ["./.data/**/*", "./.local/**/*", "./.env*", "./tests/**/*"],
+  },
   outputFileTracingIncludes: {
     "/*": ["./migrations/**/*.sql", "./src/content/**/*.md"],
   },

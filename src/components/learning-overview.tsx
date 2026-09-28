@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { documentHref, getModule } from "@/content/catalog";
@@ -10,6 +12,14 @@ import {
 } from "@/lib/learning-types";
 
 export function LearningOverview() {
+  return (
+    <PersonalGate title="Garder ma progression">
+      <LearningOverviewContent />
+    </PersonalGate>
+  );
+}
+
+function LearningOverviewContent() {
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);

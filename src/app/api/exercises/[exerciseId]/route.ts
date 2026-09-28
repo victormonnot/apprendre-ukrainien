@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getExercise } from "@/content/exercises";
 import {
   EXERCISE_FIELD_MAX_LENGTH,
@@ -151,7 +152,7 @@ function handleError(error: unknown) {
   );
 }
 
-export async function GET(request: Request, context: RouteContext) {
+async function handleGET(request: Request, context: RouteContext) {
   try {
     requireLocalRequest(request);
     const { exerciseId } = await context.params;
@@ -164,7 +165,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 }
 
-export async function POST(request: Request, context: RouteContext) {
+async function handlePOST(request: Request, context: RouteContext) {
   try {
     requireLocalRequest(request, true);
     const { exerciseId } = await context.params;
@@ -203,3 +204,6 @@ export async function POST(request: Request, context: RouteContext) {
     return handleError(error);
   }
 }
+
+export const GET = withAccount(handleGET);
+export const POST = withAccount(handlePOST);

@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { appFetch, WorkspaceClientError } from "@/lib/workspace-client";
@@ -19,7 +21,17 @@ const statuses = {
   pending: "En attente de correction",
 };
 
-export function ExerciseOverview({ moduleId }: { moduleId: string }) {
+export function ExerciseOverview(
+  props: Parameters<typeof ExerciseOverviewContent>[0],
+) {
+  return (
+    <PersonalGate silent>
+      <ExerciseOverviewContent {...props} />
+    </PersonalGate>
+  );
+}
+
+function ExerciseOverviewContent({ moduleId }: { moduleId: string }) {
   const [summaries, setSummaries] = useState<Summary[] | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);

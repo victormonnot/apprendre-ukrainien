@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getLearningStore } from "@/lib/server/learning-service";
 import {
   SceneInputError,
@@ -46,7 +47,7 @@ function handleError(error: unknown) {
   );
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   try {
     requireLocalRequest(request);
     const params = new URL(request.url).searchParams;
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     requireLocalRequest(request, true);
     const command = validateSceneCommand(await readLocalJson(request));
@@ -94,3 +95,6 @@ export async function POST(request: Request) {
     return handleError(error);
   }
 }
+
+export const GET = withAccount(handleGET);
+export const POST = withAccount(handlePOST);

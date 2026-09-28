@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { getDataDirectory } from "./account-context.ts";
 
 export type DatabaseOptions = {
   migrationsDirectory?: string;
@@ -84,7 +85,7 @@ export function applyMigrations(database: DatabaseSync, directory: string) {
 }
 
 export function openDatabase(
-  directory = process.env.APP_DATA_DIR || path.join(process.cwd(), ".data"),
+  directory = getDataDirectory(),
   options: DatabaseOptions = {},
 ) {
   mkdirSync(directory, { recursive: true, mode: 0o700 });

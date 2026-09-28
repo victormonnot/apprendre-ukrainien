@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getCourseDocument } from "@/lib/course-content";
 import {
   NOTE_MAX_LENGTH,
@@ -104,7 +105,7 @@ function handleError(error: unknown) {
   );
 }
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   try {
     requireLocalRequest(request);
     const store = getLearningStore();
@@ -114,7 +115,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     requireLocalRequest(request, true);
     const command = await readCommand(request);
@@ -154,3 +155,6 @@ export async function POST(request: Request) {
     return handleError(error);
   }
 }
+
+export const GET = withAccount(handleGET);
+export const POST = withAccount(handlePOST);

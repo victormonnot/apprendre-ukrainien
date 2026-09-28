@@ -1,11 +1,7 @@
 import "server-only";
 import { openLearningStore } from "./learning-store";
-
-const processState = globalThis as typeof globalThis & {
-  learningStore?: ReturnType<typeof openLearningStore>;
-};
+import { getRequestStore } from "./account-context";
 
 export function getLearningStore() {
-  processState.learningStore ??= openLearningStore();
-  return processState.learningStore;
+  return getRequestStore("learning", openLearningStore);
 }

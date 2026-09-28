@@ -19,19 +19,22 @@ import { getLanguageStore } from "./language-service";
 import { getReviewStore } from "./review-service";
 import { RequestError } from "./local-request";
 import {
+  getAccountRequestNamespace,
+  getRequestAccount,
+  getRequestStore,
+} from "./account-context";
+import {
   assertWorkspaceGeneration,
   getWorkspaceGeneration,
   WorkspaceChangedError,
 } from "./workspace-generation";
 
 const state = globalThis as typeof globalThis & {
-  audioStore?: ReturnType<typeof openAudioStore>;
   audioRequests?: Map<string, Promise<AudioClip>>;
   audioCalls?: Map<string, number[]>;
 };
 export function getAudioStore() {
-  state.audioStore ??= openAudioStore();
-  return state.audioStore;
+  return getRequestStore("audio", openAudioStore);
 }
 export async function getAudioCatalogue(): Promise<AudioCatalogue> {
   const voices = await audioVoices();
@@ -55,9 +58,15 @@ export async function requestAudio(
   const store = getAudioStore();
   const cached = store.findClip(userId, descriptor);
   if (cached) return cached;
+  const account = getRequestAccount();
+  if (account && account.role !== "owner")
+    throw new RequestError(
+      "La création de nouveaux contenus IA est réservée au compte propriétaire pour le moment.",
+      403,
+    );
   state.audioRequests ??= new Map();
   state.audioCalls ??= new Map();
-  const owner = `${generation}:${userId}`;
+  const owner = `${getAccountRequestNamespace()}:${generation}:${userId}`;
   const key = `${owner}:${createHash("sha256").update(JSON.stringify(descriptor)).digest("hex")}`;
   const pending = state.audioRequests.get(key);
   if (pending) return pending;
@@ -71,6 +80,9 @@ export async function requestAudio(
       429,
     );
   const now = Date.now();
+  for (const [key, calls] of state.audioCalls)
+    if (!calls.some((time) => now - time < 60_000))
+      state.audioCalls.delete(key);
   const recent = (state.audioCalls.get(owner) ?? []).filter(
     (time) => now - time < 60_000,
   );

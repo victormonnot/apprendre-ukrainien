@@ -1,5 +1,9 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
+import { PersonalGate, useAuth } from "./auth-context";
+
 import { useCallback, useEffect, useState } from "react";
 import type {
   BackupFile,
@@ -34,9 +38,9 @@ type Preparation = {
   command: RestoreCommand | null;
 };
 const pendingKey = "backup-preparation";
-function recovered(): Preparation | null {
+function recovered(storage: Storage): Preparation | null {
   try {
-    const raw = sessionStorage.getItem(pendingKey);
+    const raw = storage.getItem(pendingKey);
     if (!raw || raw.length > 20000) return null;
     const value = JSON.parse(raw) as Preparation;
     if (
@@ -96,7 +100,19 @@ function Summary({ value }: { value: BackupSummary }) {
   );
 }
 export function BackupWorkspace() {
-  const [initial] = useState(recovered);
+  return (
+    <PersonalGate>
+      <BackupWorkspaceContent />
+    </PersonalGate>
+  );
+}
+
+function BackupWorkspaceContent() {
+  const { enabled, account } = useAuth();
+  const member = enabled && account?.role === "member";
+  const maxBackupBytes = member ? 8 * 1024 * 1024 : BACKUP_MAX_BYTES;
+  const storage = useWorkspaceStorage();
+  const [initial] = useState(() => recovered(storage));
   const [overview, setOverview] = useState<Overview | null>(null);
   const [inspection, setInspection] = useState<BackupInspection | null>(
     initial?.inspection ?? null,
@@ -134,15 +150,15 @@ export function BackupWorkspace() {
   useEffect(() => {
     try {
       if (inspection)
-        sessionStorage.setItem(
+        storage.setItem(
           pendingKey,
           JSON.stringify({ inspection, command: pending }),
         );
-      else sessionStorage.removeItem(pendingKey);
+      else storage.removeItem(pendingKey);
     } catch {
       /* An unavailable tab store does not prevent a server backup. */
     }
-  }, [inspection, pending]);
+  }, [inspection, pending, storage]);
   async function run(task: string, action: () => Promise<void>) {
     if (busy) return;
     setBusy(task);
@@ -176,8 +192,10 @@ export function BackupWorkspace() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function inspect(bytes: Blob) {
-    if (bytes.size === 0 || bytes.size > BACKUP_MAX_BYTES)
-      throw new Error("Choisis un fichier de sauvegarde de moins de 256 Mio.");
+    if (bytes.size === 0 || bytes.size > maxBackupBytes)
+      throw new Error(
+        `Choisis un fichier de sauvegarde de ${size(maxBackupBytes)} maximum.`,
+      );
     const result = await readResponse<BackupInspection>(
       await appFetch("/api/backups/inspect", {
         method: "POST",
@@ -203,22 +221,23 @@ export function BackupWorkspace() {
     setPending(command);
     // Keep the exact command before sending, including across a tab reload.
     try {
-      sessionStorage.setItem(
-        pendingKey,
-        JSON.stringify({ inspection, command }),
-      );
+      storage.setItem(pendingKey, JSON.stringify({ inspection, command }));
     } catch {
       /* Memory still retains the retry. */
     }
-    const response = await fetch("/api/backups/restore", {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Workspace-Generation": command.expectedGeneration,
+    const response = await appFetch(
+      "/api/backups/restore",
+      {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Workspace-Generation": command.expectedGeneration,
+        },
+        body: JSON.stringify(command),
       },
-      body: JSON.stringify(command),
-    });
+      { generation: command.expectedGeneration, allowWorkspaceChange: true },
+    );
     if (!response.ok && [400, 404, 409, 410, 413].includes(response.status)) {
       setPending(null);
       setInspection(null);
@@ -230,7 +249,7 @@ export function BackupWorkspace() {
     setInspection(null);
     setConfirmed(false);
     try {
-      sessionStorage.removeItem(pendingKey);
+      storage.removeItem(pendingKey);
     } catch {
       /* The committed receipt is authoritative. */
     }
@@ -335,6 +354,13 @@ export function BackupWorkspace() {
           l’application. Le fichier téléchargé contient tes données personnelles
           et tes sons, sans clé API.
         </p>
+        {member && (
+          <p className="data-small">
+            Ton espace conserve les 3 dernières sauvegardes personnelles et les
+            2 dernières copies de secours. Télécharge celles que tu souhaites
+            garder plus longtemps.
+          </p>
+        )}
         {overview?.files.length ? (
           <ul className="data-files">
             {overview.files.map((file) => (
@@ -404,9 +430,9 @@ export function BackupWorkspace() {
           }}
         />
         <p className="data-small">
-          Format de sauvegarde .sqlite3 · 256 Mio maximum. Les fichiers externes
-          des podcasts, les clés et les saisies non enregistrées ne sont pas
-          inclus.
+          Format de sauvegarde .sqlite3 · {size(maxBackupBytes)} maximum. Les
+          fichiers externes des podcasts, les clés et les saisies non
+          enregistrées ne sont pas inclus.
         </p>
       </section>
       {inspection && (
@@ -486,8 +512,8 @@ export function BackupWorkspace() {
         </section>
       )}
       <p className="data-footer">
-        Les sauvegardes conservent ce qui est enregistré sur le serveur. L’accès
-        depuis plusieurs appareils sera configuré séparément.
+        Les sauvegardes conservent ce qui est enregistré sur le serveur. Les
+        brouillons non enregistrés restent dans cet onglet.
       </p>
     </div>
   );

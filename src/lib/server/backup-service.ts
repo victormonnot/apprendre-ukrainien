@@ -1,10 +1,6 @@
 import "server-only";
 import { openBackupStore } from "./backup-store";
-
-const state = globalThis as typeof globalThis & {
-  backupStore?: ReturnType<typeof openBackupStore>;
-};
+import { getRequestStore } from "./account-context";
 export function getBackupStore() {
-  state.backupStore ??= openBackupStore();
-  return state.backupStore;
+  return getRequestStore("backups", openBackupStore);
 }

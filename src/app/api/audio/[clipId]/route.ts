@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getLearningStore } from "@/lib/server/learning-service";
 import { getAudioStore } from "@/lib/server/audio-service";
 import { audioByteRange } from "@/lib/server/audio-range";
@@ -62,9 +63,12 @@ async function serve(request: Request, context: Context, head = false) {
     );
   }
 }
-export async function GET(request: Request, context: Context) {
+async function handleGET(request: Request, context: Context) {
   return serve(request, context);
 }
-export async function HEAD(request: Request, context: Context) {
+async function handleHEAD(request: Request, context: Context) {
   return serve(request, context, true);
 }
+
+export const GET = withAccount(handleGET);
+export const HEAD = withAccount(handleHEAD);

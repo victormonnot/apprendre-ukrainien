@@ -1,6 +1,6 @@
 import "server-only";
-import type { DatabaseSync } from "node:sqlite";
 import { openDatabase } from "./database";
+import { getRequestStore } from "./account-context";
 
 export const WORKSPACE_CHANGED_MESSAGE =
   "Une sauvegarde a été restaurée depuis l’ouverture de cet onglet. Tes textes restent ici. Recharge la page pour travailler avec les données restaurées ; les anciens brouillons seront conservés dans une archive exportable.";
@@ -14,13 +14,8 @@ export class WorkspaceChangedError extends Error {
   }
 }
 
-const state = globalThis as typeof globalThis & {
-  workspaceGenerationDatabase?: DatabaseSync;
-};
-
 export function getWorkspaceGeneration(): string {
-  state.workspaceGenerationDatabase ??= openDatabase();
-  const row = state.workspaceGenerationDatabase
+  const row = getRequestStore("workspace-generation", openDatabase)
     .prepare("SELECT generation FROM workspace_state WHERE id = 1")
     .get();
   if (

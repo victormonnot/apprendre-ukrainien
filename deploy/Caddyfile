@@ -1,7 +1,14 @@
-{$APP_HOST} {
+(access-private) {
 	basic_auth {
 		{$APP_LOGIN} {$APP_PASSWORD_HASH}
 	}
+}
+
+(access-accounts) {
+}
+
+{$APP_HOST} {
+	import access-{$APP_ACCESS_MODE:private}
 
 	encode zstd gzip
 

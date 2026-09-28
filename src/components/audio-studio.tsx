@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -30,6 +32,14 @@ const modes: { id: AudioMode; label: string; description: string }[] = [
 ];
 
 export function AudioStudio() {
+  return (
+    <PersonalGate>
+      <AudioStudioContent />
+    </PersonalGate>
+  );
+}
+
+function AudioStudioContent() {
   const searchParams = useSearchParams();
   const requestedElement = searchParams.get("element");
   return (

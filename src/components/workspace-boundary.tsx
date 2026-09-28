@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "./auth-context";
 import { useEffect, useState, type ReactNode } from "react";
 import {
   bootstrapWorkspace,
@@ -7,6 +8,16 @@ import {
 } from "@/lib/workspace-client";
 
 export function WorkspaceBoundary({ children }: { children: ReactNode }) {
+  const { enabled, account } = useAuth();
+  if (enabled && !account) return children;
+  return (
+    <PersonalWorkspace key={account?.id ?? "local"}>
+      {children}
+    </PersonalWorkspace>
+  );
+}
+
+function PersonalWorkspace({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);

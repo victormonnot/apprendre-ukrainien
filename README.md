@@ -19,7 +19,7 @@ et un studio permettent d’écouter et de répéter les mots et phrases.
 
 Les révisions espacées sont intégrées à l’application : 31 éléments du premier
 module proposent 50 cartes courtes. La sélection et l’historique de révision
-sont propres au profil local.
+sont propres à chaque espace personnel.
 
 La médiathèque relie des podcasts, une vidéo et un guide audio aux passages du
 module. Chaque ressource possède un objectif d’écoute, des notes personnelles
@@ -85,6 +85,15 @@ conflits entre onglets et la validation des requêtes. Les tests unitaires couvr
 les échéances, les changements de jour et d’heure, et les limites de nouveautés.
 Une base temporaire distincte est utilisée pour chaque lancement des tests : les
 données personnelles ne sont pas modifiées.
+
+Pour vérifier les comptes, les sessions et la séparation des données :
+
+```sh
+APP_AUTH_ENABLED=1 npx playwright test tests/accounts.spec.ts
+```
+
+Ce lot utilise aussi un répertoire temporaire et crée son propre compte de test.
+Il est exécuté séparément dans GitHub Actions.
 
 `npm run test:hosting` nécessite Docker, Docker Compose et Chromium. Il utilise
 un projet Compose temporaire avec des identifiants de test et un certificat
@@ -354,29 +363,30 @@ sauvegarde déjà reçue ne l’applique pas une seconde fois. Ouvrir une ressou
 ou l’écouter n’attribue aucun résultat d’apprentissage et n’ajoute aucune carte
 aux révisions.
 
-### Accès personnel
+### Accès et comptes
 
-Cette version utilise un seul profil, partagé par les navigateurs qui ouvrent
-la même installation. Les commandes de développement et de démarrage écoutent
-uniquement sur l’interface locale.
+Les cours et le catalogue sont consultables sans compte en mode public. L’inscription
+par pseudo et mot de passe ouvre un espace privé pour les notes, exercices, révisions,
+fiches, sons et sauvegardes. La connexion, la déconnexion, le changement de mot de
+passe et la récupération du compte sont accessibles dans l’application. Le code de
+récupération est affiché une seule fois : le conserver dans un endroit privé.
 
-Une installation sur un VPS utilise HTTPS et une authentification au niveau de
-Caddy. L’ensemble du site, des API, des sons et des sauvegardes est protégé.
-Le navigateur demande un identifiant et un mot de passe ; ce premier mode
-personnel ne propose pas de gestion de comptes ni de bouton de déconnexion.
-L’application vérifie aussi l’origine configurée et le secret du proxy avant
-d’autoriser l’accès. Une configuration d’accès incomplète refuse les requêtes.
+Chaque compte dispose de sa propre base. Une restauration remplace seulement les
+données pédagogiques du compte connecté, sans modifier les identités ni les sessions.
+Les brouillons et archives du navigateur sont aussi séparés par compte. Le compte
+propriétaire est créé explicitement par l’administrateur et retrouve la base
+historique ; les inscriptions ne peuvent pas se l’attribuer. Les anciens brouillons
+locaux sont repris uniquement après connexion du propriétaire.
 
-Les données enregistrées se retrouvent depuis les autres appareils connectés au
-même serveur, après chargement de la page. Les brouillons non enregistrés et les
-préférences du navigateur restent propres à chaque appareil ; il n’y a pas de
-synchronisation hors ligne. Les conflits de modification conservent le texte
-local jusqu’au choix explicite de la version à garder.
+Dans cette version, les nouveaux appels IA sont réservés au propriétaire. Les autres
+comptes peuvent consulter leurs propres résultats et sons déjà enregistrés ou
+importés. Les cours, exercices et révisions restent utilisables sans appel IA.
 
-Le [guide de déploiement](deploy/README.md) décrit la configuration Docker Compose,
-le domaine, l’accès privé, les volumes persistants et les mises à jour. Une seule
-instance de l’application doit écrire dans la base. La configuration du proxy
-peut accueillir d’autres sites sur le même serveur.
+Le [guide de déploiement](deploy/README.md) décrit `APP_ACCESS_MODE=accounts` pour
+l’accès public et les sessions personnelles, ou `private` pour conserver l’ancien
+accès HTTP à un seul profil. Le mode local de développement garde son profil unique
+par défaut ; tester les comptes avec `APP_AUTH_ENABLED=1` et un répertoire jetable.
+HTTPS, contrôle d’origine et secret de proxy restent requis en hébergement.
 
 ### Sauvegardes et restauration
 
@@ -388,14 +398,22 @@ repères de la médiathèque et les sons conservés. Les clés API, les préfér
 navigateur, les saisies non enregistrées et les médias externes n’en font pas
 partie.
 
-Les fichiers `.sqlite3` restent dans le répertoire privé
-`APP_DATA_DIR/backups` (ou `.data/backups` par défaut). Télécharger une copie et
+Les comptes membres peuvent importer jusqu’à **8 Mio** et conservent les trois
+sauvegardes manuelles et les deux sauvegardes de sécurité les plus récentes. Le
+propriétaire conserve les limites et l’historique de sauvegardes de son espace.
+Les exports ne contiennent ni mots de passe de compte, ni sessions, ni codes de
+récupération.
+
+Les fichiers `.sqlite3` restent dans le répertoire privé du compte :
+`APP_DATA_DIR/backups` pour le propriétaire, `APP_DATA_DIR/accounts/<id>/backups`
+pour un membre (`APP_DATA_DIR` vaut `.data` par défaut). Télécharger une copie et
 la conserver sur un autre support permet de se protéger d’une perte de
 l’ordinateur. Le fichier contient des données personnelles en clair.
 
 La vérification affiche un aperçu des données du fichier sans remplacer le
 travail actuel. Cette version accepte les sauvegardes ayant exactement le schéma
-et les migrations de la version installée, jusqu’à **256 Mio**. Elle vérifie
+et les migrations de la version installée, jusqu’à **256 Mio** pour le propriétaire
+ou **8 Mio** pour un membre. Elle vérifie
 l’intégrité SQLite, les contraintes et les relations entre tables ; un fichier
 modifié manuellement n’est pas une méthode d’import de contenu. Les préparations
 expirent après une heure, avec cinq fichiers au maximum en attente.

@@ -1,6 +1,6 @@
-# Déploiement privé sur un VPS
+# Déploiement sur un VPS
 
-Cette configuration lance un serveur Next.js avec Node 24, SQLite et Caddy. Caddy protège tout le site par identifiant et mot de passe. Le port de l’application reste accessible uniquement sur le réseau Docker. Le service utilise un seul profil personnel partagé par les appareils connectés.
+Cette configuration lance un serveur Next.js avec Node 24, SQLite et Caddy. Le mode `private` conserve l’accès HTTP à un profil personnel. Le mode `accounts` rend les pages publiques et réserve les données aux sessions des comptes. Le port de l’application reste accessible uniquement sur le réseau Docker. Le même `APP_ACCESS_MODE` est transmis à la passerelle et à l’application ; `private` reste le défaut.
 
 Choisir la configuration Coolify ci-dessous ou l’installation autonome des sections suivantes. Dans Coolify, son proxy gère HTTPS ; en installation autonome, Caddy gère aussi le certificat.
 
@@ -14,11 +14,12 @@ Dans **Domains for gateway**, saisir uniquement l’URL HTTPS du site, par exemp
 
 Dans **Environment Variables**, renseigner les valeurs suivantes en activant **Runtime Variable** et en désactivant **Build Variable**. Désactiver également **Inject Build Args to Dockerfile** ; aucun secret n’est nécessaire à la construction.
 
-Les quatre variables d’accès `APP_HOST`, `APP_LOGIN`, `APP_PASSWORD_HASH` et `APP_PROXY_SECRET` sont obligatoires au démarrage. Pendant le build, Compose peut annoncer qu’elles sont absentes et les remplacer par des valeurs vides : les services ne démarrent pas à cette étape. Une configuration d’accès restée vide au démarrage ne donne aucun accès au site.
+En mode `private`, les quatre variables d’accès `APP_HOST`, `APP_LOGIN`, `APP_PASSWORD_HASH` et `APP_PROXY_SECRET` sont obligatoires au démarrage. Pendant le build, Compose peut annoncer qu’elles sont absentes et les remplacer par des valeurs vides : les services ne démarrent pas à cette étape. Une configuration d’accès restée vide au démarrage ne donne aucun accès au site.
 
 | Variable            | Valeur                                                                                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_HOST`          | Le nom d’hôte du domaine choisi, sans `https://`, chemin ni slash final.                                                                                   |
+| `APP_ACCESS_MODE`   | `private` pour l’accès HTTP personnel, `accounts` pour les pages publiques et les comptes séparés.                                                         |
 | `APP_LOGIN`         | L’identifiant personnel, sans espace.                                                                                                                      |
 | `APP_PASSWORD_HASH` | Le hash bcrypt généré avec la commande Caddy de la section suivante. En vue **Normal**, coller le hash seul et activer **Literal** pour préserver les `$`. |
 | `APP_PROXY_SECRET`  | Le résultat de `openssl rand -hex 32`, identique pour l’application et la passerelle.                                                                      |
@@ -38,6 +39,32 @@ Installer Docker Engine et les plugins Docker Compose et Buildx sur un serveur L
 Créer uniquement un enregistrement DNS pour le sous-domaine choisi, par exemple `ukrainien.example.com`, pointant vers l’adresse IPv4 du VPS. Ajouter un enregistrement AAAA seulement si IPv6 est également configuré. Les autres enregistrements du domaine restent inchangés.
 
 Si le serveur héberge déjà des sites derrière Caddy ou un autre proxy, suivre la section « Plusieurs projets » avant de démarrer ces services.
+
+## Activer les comptes et les pages publiques
+
+1. Télécharger une sauvegarde pédagogique fraîche et conserver le volume existant. Déployer le code avec `APP_ACCESS_MODE=private` le temps de préparer le propriétaire.
+2. Préparer **hors du dépôt**, dans un fichier de permissions `0600`, un objet JSON contenant `username`, `displayName` et `password` (12 à 128 caractères). Le pseudo ne contient que lettres ASCII, chiffres, point, tiret ou soulignement, sur 3 à 32 caractères.
+3. Créer explicitement le propriétaire depuis le conteneur de l’application. Le script lit les identifiants sur stdin et renvoie un code de récupération ; rediriger aussi cette sortie vers un fichier privé `0600`. Avec Compose autonome :
+
+   ```sh
+   umask 077
+   docker compose --env-file deploy/.env exec -T app node scripts/account.ts provision-owner < /chemin/prive/compte.json > /chemin/prive/recuperation.json
+   ```
+
+   Avec Coolify, utiliser le conteneur **app** exact de cette application et la même commande `node /app/scripts/account.ts provision-owner`. Le script refuse de créer un second propriétaire. Les inscriptions publiques ne peuvent ni créer ce rôle ni reprendre la base historique. La création associe le propriétaire au répertoire existant sans déplacer ni réécrire ses données pédagogiques. Ne pas partager le fichier de récupération.
+
+4. Passer `APP_ACCESS_MODE` à `accounts` en runtime pour **app et passerelle**, puis recréer les services sur la version préparée. Les deux fichiers Compose fournis propagent une seule valeur. La fenêtre HTTP disparaît : le site propose `/connexion` et `/inscription`. Les comptes sont persistants sur le même volume. `APP_LOGIN` et `APP_PASSWORD_HASH` sont utilisés seulement en mode `private`.
+5. Vérifier que les cours répondent sans identifiants, que les API personnelles répondent `401` sans session, puis se connecter au compte propriétaire et retrouver ses données. Faire un essai avec un second compte vide avant de partager le site.
+
+En développement local, `APP_AUTH_ENABLED=1` permet de tester les comptes avec un **répertoire de données jetable** et un propriétaire provisionné avec `npm run account -- provision-owner`. Ne pas utiliser la base personnelle pour les essais.
+
+`APP_DATA_DIR`, lorsqu’il est défini pour les comptes, doit être un chemin absolu.
+
+Les sessions opaques sont stockées sous forme d’empreintes dans `accounts.sqlite3` ; cookie HttpOnly, SameSite et Secure en HTTPS, expiration après 30 jours. Chaque membre a un répertoire `accounts/<id>/` contenant sa base, ses sons et ses sauvegardes. Le registre des identités et sessions reste hors des imports/exports pédagogiques : restaurer une sauvegarde ne change pas le compte. En cas de mot de passe oublié, le code de récupération fourni à l’inscription remplace un e-mail de réinitialisation. Un code utilisé est remplacé et les anciennes sessions sont révoquées.
+
+La génération IA est réservée au propriétaire dans cette version. Les membres peuvent lire leurs propres sons déjà sauvegardés/importés. Les inscriptions, connexions et écritures ont des limites persistantes hors des sauvegardes pédagogiques. Les membres disposent de 10 opérations de sauvegarde par 24 heures ; imports de 8 Mio au maximum, trois sauvegardes manuelles et deux de sécurité conservées. Les imports expirés sont nettoyés. Le seuil de stockage de 48 Mio suspend les autres écritures mais permet encore un export ou une restauration ; ce seuil est un contrôle préalable, pas une limite physique stricte pendant les transactions. Les limites historiques du propriétaire sont conservées. Les uploads ont un délai de lecture et deux inspections simultanées au maximum.
+
+Les sauvegardes d’exploitation doivent aussi couvrir le registre `accounts.sqlite3` et tous les répertoires du volume, avec des snapshots SQLite cohérents ; les exports individuels **Mes données** ne sauvegardent pas les identités. Conserver les anciens fichiers et le registre pour un retour arrière : repasser en `private` masque les comptes membres et retrouve le profil historique, sans supprimer leurs données.
 
 ## Configurer l’accès
 

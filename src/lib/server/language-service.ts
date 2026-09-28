@@ -15,6 +15,11 @@ import {
 import { generateLanguageResult } from "./language-provider";
 import { RequestError } from "./local-request";
 import {
+  getAccountRequestNamespace,
+  getRequestAccount,
+  getRequestStore,
+} from "./account-context";
+import {
   submittedLanguageAnswers,
   submittedLanguageInput,
 } from "./language-input";
@@ -25,7 +30,6 @@ import {
 } from "./workspace-generation";
 
 const state = globalThis as typeof globalThis & {
-  languageStore?: ReturnType<typeof openLanguageStore>;
   languageRequests?: Map<
     string,
     { input: string; promise: Promise<LanguageResult> }
@@ -33,8 +37,7 @@ const state = globalThis as typeof globalThis & {
   languageCalls?: Map<string, number[]>;
 };
 export function getLanguageStore() {
-  state.languageStore ??= openLanguageStore();
-  return state.languageStore;
+  return getRequestStore("language", openLanguageStore);
 }
 export function languageConfigured() {
   return !!process.env.OPENAI_API_KEY?.trim();
@@ -114,9 +117,15 @@ export async function requestLanguageResult(
       throw new LanguageRequestConflictError();
     return existing;
   }
+  const account = getRequestAccount();
+  if (account && account.role !== "owner")
+    throw new RequestError(
+      "La création de nouveaux contenus IA est réservée au compte propriétaire pour le moment.",
+      403,
+    );
   state.languageRequests ??= new Map();
   state.languageCalls ??= new Map();
-  const owner = `${generation}:${userId}`;
+  const owner = `${getAccountRequestNamespace()}:${generation}:${userId}`;
   const key = `${owner}:${requestId}`;
   const current = state.languageRequests.get(key);
   if (current) {
@@ -133,6 +142,9 @@ export async function requestLanguageResult(
       429,
     );
   const now = Date.now();
+  for (const [key, calls] of state.languageCalls)
+    if (!calls.some((time) => now - time < 60_000))
+      state.languageCalls.delete(key);
   const recent = (state.languageCalls.get(owner) ?? []).filter(
     (time) => now - time < 60_000,
   );

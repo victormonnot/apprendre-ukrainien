@@ -12,6 +12,7 @@ import {
 import path from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { isDeepStrictEqual } from "node:util";
+import { getDataDirectory, getRequestAccount } from "./account-context.ts";
 import {
   BACKUP_MAX_BYTES,
   type BackupFile,
@@ -167,7 +168,7 @@ function reader(filename: string) {
 }
 
 export function openBackupStore(
-  directory = process.env.APP_DATA_DIR || path.join(process.cwd(), ".data"),
+  directory = getDataDirectory(),
   options: StoreOptions = {},
 ) {
   const database = openDatabase(directory, options);
@@ -211,6 +212,7 @@ export function openBackupStore(
   privateDirectory(backups);
   privateDirectory(pending);
   const now = () => options.now?.() ?? new Date();
+  let createdBackupId: string | undefined;
 
   function validate(input: DatabaseSync) {
     if (!isDeepStrictEqual(schema(input), expectedSchema))
@@ -323,6 +325,7 @@ export function openBackupStore(
         kind,
       };
       writePrivate(path.join(backups, `${id}.json`), JSON.stringify(file));
+      createdBackupId = id;
       return file;
     } catch (error) {
       rmSync(filename, { force: true });
@@ -388,6 +391,30 @@ export function openBackupStore(
   }
 
   return {
+    maintainMemberBackups() {
+      if (getRequestAccount()?.role !== "member") return;
+      cleanupInspections();
+      const available = files();
+      for (const [kind, keep] of [
+        ["manual", 3],
+        ["safety", 2],
+      ] as const) {
+        const candidates = available.filter((file) => file.kind === kind);
+        // Keep a snapshot returned by this request even when timestamps tie.
+        const retained = new Set<string>();
+        if (candidates.some((file) => file.id === createdBackupId))
+          retained.add(createdBackupId!);
+        for (const file of candidates) {
+          if (retained.size >= keep) break;
+          retained.add(file.id);
+        }
+        for (const file of candidates) {
+          if (retained.has(file.id)) continue;
+          rmSync(path.join(backups, `${file.id}.sqlite3`), { force: true });
+          rmSync(path.join(backups, `${file.id}.json`), { force: true });
+        }
+      }
+    },
     getOverview() {
       return {
         generation: generation(database),

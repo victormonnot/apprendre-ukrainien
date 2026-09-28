@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import {
   useCallback,
   useEffect,
@@ -72,7 +74,11 @@ export function AudioPlayer(props: Props) {
     props.repetitions,
     props.gapSeconds,
   ]);
-  return <AudioPlayerSession key={session} {...props} />;
+  return (
+    <PersonalGate compact>
+      <AudioPlayerSession key={session} {...props} />
+    </PersonalGate>
+  );
 }
 
 function AudioPlayerSession({

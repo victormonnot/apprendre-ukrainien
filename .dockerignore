@@ -6,6 +6,8 @@
 !tsconfig.json
 !src/
 !src/**
+!scripts/
+!scripts/account.ts
 !migrations/
 !migrations/*.sql
 !public/

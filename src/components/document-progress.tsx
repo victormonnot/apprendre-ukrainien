@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import { useEffect, useState } from "react";
 import type { DocumentView } from "@/content/catalog";
 import { LearningNotebook } from "@/components/learning-notebook";
@@ -15,7 +17,17 @@ type Props = {
   sections: { id: string; title: string }[];
 };
 
-export function DocumentProgress({ moduleId, view, sections }: Props) {
+export function DocumentProgress(
+  props: Parameters<typeof DocumentProgressContent>[0],
+) {
+  return (
+    <PersonalGate title="Mon suivi du cours">
+      <DocumentProgressContent {...props} />
+    </PersonalGate>
+  );
+}
+
+function DocumentProgressContent({ moduleId, view, sections }: Props) {
   const [state, setState] = useState<LearningDocumentState | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);

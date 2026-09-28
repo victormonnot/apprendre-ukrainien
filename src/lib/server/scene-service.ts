@@ -2,14 +2,10 @@ import "server-only";
 import { getScene } from "@/content/scenes";
 import { openSceneStore } from "./scene-store";
 import { RequestError } from "./local-request";
-
-const state = globalThis as typeof globalThis & {
-  sceneStore?: ReturnType<typeof openSceneStore>;
-};
+import { getRequestStore } from "./account-context";
 
 export function getSceneStore() {
-  state.sceneStore ??= openSceneStore();
-  return state.sceneStore;
+  return getRequestStore("scenes", openSceneStore);
 }
 
 export function requireScene(

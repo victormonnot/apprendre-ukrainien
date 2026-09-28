@@ -1,3 +1,4 @@
+import { readBodyChunk } from "@/lib/server/request-body";
 import "server-only";
 import {
   assertRequestAccess,
@@ -91,8 +92,9 @@ export async function readLocalJson(
   let size = 0;
   let text = "";
   const decoder = new TextDecoder();
+  const deadline = Date.now() + 60_000;
   while (true) {
-    const { value, done } = await reader.read();
+    const { value, done } = await readBodyChunk(reader, deadline);
     if (done) break;
     size += value.byteLength;
     if (size > 128 * 1024) {

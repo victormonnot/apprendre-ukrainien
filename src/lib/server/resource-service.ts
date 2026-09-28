@@ -2,14 +2,10 @@ import "server-only";
 import { getResource } from "@/content/resources";
 import { RequestError } from "./local-request";
 import { openResourceStore } from "./resource-store";
-
-const state = globalThis as typeof globalThis & {
-  resourceStore?: ReturnType<typeof openResourceStore>;
-};
+import { getRequestStore } from "./account-context";
 
 export function getResourceStore() {
-  state.resourceStore ??= openResourceStore();
-  return state.resourceStore;
+  return getRequestStore("resources", openResourceStore);
 }
 
 export function requireResource(id: string) {

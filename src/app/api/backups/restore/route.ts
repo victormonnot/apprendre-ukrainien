@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getBackupStore } from "@/lib/server/backup-service";
 import { backupErrorResponse } from "@/lib/server/backup-http";
 import {
@@ -9,7 +10,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     // The store checks the exact receipt before the generation, so a lost response
     // can be retried after a successful restore. Origin validation still applies.
@@ -41,3 +42,5 @@ export async function POST(request: Request) {
     return backupErrorResponse(error);
   }
 }
+
+export const POST = withAccount(handlePOST);

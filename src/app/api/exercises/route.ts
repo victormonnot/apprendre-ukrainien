@@ -1,3 +1,4 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getModule } from "@/content/catalog";
 import { getModuleExercises } from "@/content/exercises";
 import { getExerciseStore } from "@/lib/server/exercise-service";
@@ -11,7 +12,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   try {
     requireLocalRequest(request);
     const moduleId = new URL(request.url).searchParams.get("moduleId");
@@ -45,3 +46,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withAccount(handleGET);

@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadResourceLibrary } from "@/lib/resource-client";
@@ -13,11 +15,14 @@ export function ResourceLibrary({
 }: {
   resources: LearningResource[];
 }) {
+  const { enabled, account } = useAuth();
+  const personal = !enabled || !!account;
   const [kind, setKind] = useState("all");
   const [states, setStates] = useState<ResourceState[]>([]);
   const [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
   useEffect(() => {
+    if (!personal) return;
     const controller = new AbortController();
     loadResourceLibrary(controller.signal)
       .then((value) => {
@@ -30,7 +35,7 @@ export function ResourceLibrary({
         if (!controller.signal.aborted) setError(true);
       });
     return () => controller.abort();
-  }, [reload]);
+  }, [reload, personal]);
   const shown = resources.filter(
     (resource) => kind === "all" || resource.kind === kind,
   );

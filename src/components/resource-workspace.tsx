@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate, useAuth } from "./auth-context";
+
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ResourcePlayer } from "@/components/resource-player";
@@ -25,8 +27,10 @@ export function ResourceWorkspace({
 }: {
   resource: LearningResource;
 }) {
+  const { enabled, account } = useAuth();
+  const personal = !enabled || !!account;
   const [state, setState] = useState<ResourceState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(personal);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [currentTime, setCurrentTime] = useState<number | null>(null);
@@ -75,6 +79,7 @@ export function ResourceWorkspace({
     };
   }, []);
   useEffect(() => {
+    if (!personal) return;
     const controller = new AbortController();
     loadResourceWorkspace(resource.id, controller.signal)
       .then((result) => {
@@ -94,9 +99,10 @@ export function ResourceWorkspace({
         );
       });
     return () => controller.abort();
-  }, [resource.id, mergeState, reload]);
+  }, [resource.id, mergeState, reload, personal]);
 
   const opened = useCallback(() => {
+    if (!personal) return;
     updateResource({
       type: "open",
       requestId: crypto.randomUUID(),
@@ -111,7 +117,7 @@ export function ResourceWorkspace({
             "Le lecteur reste utilisable, mais l’ouverture n’a pas pu être enregistrée.",
           );
       });
-  }, [resource.id, mergeState]);
+  }, [resource.id, mergeState, personal]);
   const onTime = useCallback((seconds: number) => {
     if (Number.isFinite(seconds) && seconds >= 0)
       setCurrentTime(Math.floor(seconds));
@@ -264,6 +270,11 @@ export function ResourceWorkspace({
             </button>
           </div>
         )}
+        {!personal && (
+          <PersonalGate title="Conserver mes notes et mes repères">
+            {null}
+          </PersonalGate>
+        )}
         {state && (
           <ResourceNotes key={resource.id} state={state} onState={mergeState} />
         )}
@@ -272,7 +283,7 @@ export function ResourceWorkspace({
         className="resource-side-column"
         aria-label="Reprise et liens avec le parcours"
       >
-        {resource.media && (
+        {personal && resource.media && (
           <section
             className="resource-bookmark"
             aria-labelledby="resource-bookmark-title"

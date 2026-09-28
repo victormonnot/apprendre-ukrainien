@@ -1,5 +1,9 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
+import { PersonalGate, useAuth } from "./auth-context";
+
 import { AudioPlayer } from "@/components/audio-player";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -81,8 +85,8 @@ function queryInput(query: URLSearchParams): LanguageInput {
   };
 }
 
-function restoreDraft(key: string): Draft | null {
-  const raw = sessionStorage.getItem(key);
+function restoreDraft(key: string, storage: Storage): Draft | null {
+  const raw = storage.getItem(key);
   if (!raw) return null;
   const parsed = JSON.parse(raw) as Partial<Draft>;
   const input = parsed.input;
@@ -129,12 +133,23 @@ function dateLabel(value: string) {
 }
 
 export function LanguageWorkspace() {
+  return (
+    <PersonalGate>
+      <LanguageWorkspaceContent />
+    </PersonalGate>
+  );
+}
+
+function LanguageWorkspaceContent() {
   const params = useSearchParams();
   const query = params.toString();
   return <Workshop key={query} query={query} />;
 }
 
 function Workshop({ query }: { query: string }) {
+  const { enabled, account } = useAuth();
+  const canGenerate = !enabled || !!account?.aiEnabled;
+  const storage = useWorkspaceStorage();
   const [library, setLibrary] = useState<LanguageLibrary | null>(null);
   const [input, setInput] = useState<LanguageInput>(emptyInput);
   const [result, setResult] = useState<LanguageResult | null>(null);
@@ -172,7 +187,7 @@ function Workshop({ query }: { query: string }) {
   ) {
     memoryDraft.current = { input: nextInput, resultId, pending: command };
     try {
-      sessionStorage.setItem(storageKey, JSON.stringify(memoryDraft.current));
+      storage.setItem(storageKey, JSON.stringify(memoryDraft.current));
       setStorageWarning(false);
     } catch {
       setStorageWarning(true);
@@ -186,7 +201,7 @@ function Workshop({ query }: { query: string }) {
     async function load() {
       let draft: Draft | null = memoryDraft.current;
       try {
-        draft ??= restoreDraft(storageKey);
+        draft ??= restoreDraft(storageKey, storage);
       } catch {
         if (!controller.signal.aborted) setStorageWarning(true);
       }
@@ -259,7 +274,7 @@ function Workshop({ query }: { query: string }) {
       alive.current = false;
       generation.current = version + 1;
     };
-  }, [query, reload, storageKey]);
+  }, [query, reload, storageKey, storage]);
 
   function edit(next: LanguageInput) {
     setInput(next);
@@ -289,7 +304,13 @@ function Workshop({ query }: { query: string }) {
   }
 
   function generate() {
-    if (!inputReady || !library?.configured || !input.text.trim()) return;
+    if (
+      !canGenerate ||
+      !inputReady ||
+      !library?.configured ||
+      !input.text.trim()
+    )
+      return;
     void run(async () => {
       const snapshot = { ...input };
       const command: LanguageGeneration =
@@ -531,7 +552,13 @@ function Workshop({ query }: { query: string }) {
       >
         <p className="eyebrow">À partir de ton contexte</p>
         <h2 id="language-form-title">Explorer et écrire</h2>
-        {library && !library.configured && (
+        {!canGenerate && (
+          <p className="language-notice">
+            La création de fiches avec l’IA n’est pas activée pour ce compte. Tu
+            peux consulter tes fiches déjà conservées.
+          </p>
+        )}
+        {library && !library.configured && canGenerate && (
           <div className="language-unavailable">
             <strong>L’assistance n’est pas encore connectée.</strong>
             <p>
@@ -625,7 +652,10 @@ function Workshop({ query }: { query: string }) {
             className="button button-primary"
             type="submit"
             disabled={
-              formDisabled || !library?.configured || !input.text.trim()
+              formDisabled ||
+              !canGenerate ||
+              !library?.configured ||
+              !input.text.trim()
             }
           >
             {busy && hasPending

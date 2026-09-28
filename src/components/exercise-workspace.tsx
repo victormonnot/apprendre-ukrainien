@@ -1,5 +1,9 @@
 "use client";
 
+import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
+
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import {
@@ -129,9 +133,12 @@ function validDefinition(
   return true;
 }
 
-function readDraft(definition: ExerciseDefinition): Draft | null {
+function readDraft(
+  definition: ExerciseDefinition,
+  storage: Storage,
+): Draft | null {
   try {
-    const stored = sessionStorage.getItem(draftKey(definition.id));
+    const stored = storage.getItem(draftKey(definition.id));
     if (!stored || stored.length > 500_000) return null;
     const value: unknown = JSON.parse(stored);
     if (
@@ -369,10 +376,11 @@ function ExerciseEditor({
   definition: ExerciseDefinition;
   initialState: ExerciseWorkspaceState;
 }) {
+  const storage = useWorkspaceStorage();
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [focusDraft, setFocusDraft] = useState(0);
-  const [restoredDraft] = useState(() => readDraft(definition));
+  const [restoredDraft] = useState(() => readDraft(definition, storage));
   const [workspace, setWorkspace] = useState(initialState);
   const [draft, setDraft] = useState(
     () => restoredDraft ?? fromAttempt(initialState.draft),
@@ -417,12 +425,12 @@ function ExerciseEditor({
   useEffect(() => {
     try {
       if (draft && dirty)
-        sessionStorage.setItem(draftKey(definition.id), JSON.stringify(draft));
-      else sessionStorage.removeItem(draftKey(definition.id));
+        storage.setItem(draftKey(definition.id), JSON.stringify(draft));
+      else storage.removeItem(draftKey(definition.id));
     } catch {
       // The editable draft remains available if temporary browser storage is unavailable.
     }
-  }, [definition.id, draft, dirty]);
+  }, [definition.id, draft, dirty, storage]);
 
   function acceptState(next: ExerciseWorkspaceState) {
     setWorkspace(next);
@@ -876,7 +884,8 @@ function UnavailableDraftCopy({
   definition: ExerciseDefinition;
 }) {
   const id = useId();
-  const [draft] = useState(() => readDraft(definition));
+  const storage = useWorkspaceStorage();
+  const [draft] = useState(() => readDraft(definition, storage));
   useUnsavedWork(!!draft);
   if (!draft) return null;
   return (
@@ -898,7 +907,17 @@ function UnavailableDraftCopy({
   );
 }
 
-export function ExerciseWorkspace({
+export function ExerciseWorkspace(
+  props: Parameters<typeof ExerciseWorkspaceContent>[0],
+) {
+  return (
+    <PersonalGate silent>
+      <ExerciseWorkspaceContent {...props} />
+    </PersonalGate>
+  );
+}
+
+function ExerciseWorkspaceContent({
   definition,
 }: {
   definition: ExerciseDefinition;

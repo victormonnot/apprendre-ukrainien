@@ -5,6 +5,7 @@ import {
   type AudioDescriptor,
 } from "../audio-types.ts";
 import { openDatabase, transaction, type DatabaseOptions } from "./database.ts";
+import { getRequestAccount } from "./account-context.ts";
 
 type StoreOptions = DatabaseOptions & { now?: () => Date };
 type ClipRow = {
@@ -162,6 +163,7 @@ function validateBytes(bytes: Uint8Array, mimeType: AudioClip["mimeType"]) {
 }
 
 function clipState(row: ClipRow): AudioClip {
+  const account = getRequestAccount();
   return {
     id: row.id,
     text: row.text,
@@ -171,7 +173,7 @@ function clipState(row: ClipRow): AudioClip {
     model: row.model,
     mimeType: row.mime_type,
     createdAt: row.created_at,
-    url: `/api/audio/${row.id}`,
+    url: `/api/audio/${row.id}${account ? `?account=${encodeURIComponent(account.id)}` : ""}`,
   };
 }
 

@@ -1,4 +1,8 @@
-import { appFetch, WorkspaceClientError } from "./workspace-client";
+import {
+  appFetch,
+  getWorkspaceAccountId,
+  WorkspaceClientError,
+} from "./workspace-client";
 import type {
   AudioCatalogue,
   AudioClip,
@@ -53,20 +57,27 @@ async function request<T>(init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+let catalogueOwner: string | null | undefined;
 let catalogue: AudioCatalogue | null = null;
 let catalogueRequest: Promise<AudioCatalogue> | null = null;
 
 export function loadAudioCatalogue(refresh = false): Promise<AudioCatalogue> {
+  const owner = getWorkspaceAccountId();
+  if (owner !== catalogueOwner) {
+    catalogueOwner = owner;
+    catalogue = null;
+    catalogueRequest = null;
+  }
   if (refresh) catalogue = null;
   if (catalogue) return Promise.resolve(catalogue);
   if (!catalogueRequest) {
     catalogueRequest = request<AudioCatalogue>()
       .then((value) => {
-        catalogue = value;
+        if (catalogueOwner === owner) catalogue = value;
         return value;
       })
       .finally(() => {
-        catalogueRequest = null;
+        if (catalogueOwner === owner) catalogueRequest = null;
       });
   }
   return catalogueRequest;

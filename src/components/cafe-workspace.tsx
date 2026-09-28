@@ -1,5 +1,7 @@
 "use client";
 
+import { PersonalGate } from "./auth-context";
+
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -149,7 +151,17 @@ function CafeIllustration({ speaker }: { speaker: string }) {
   );
 }
 
-export function CafeWorkspace({ scenes }: { scenes: SceneDefinition[] }) {
+export function CafeWorkspace(
+  props: Parameters<typeof CafeWorkspaceContent>[0],
+) {
+  return (
+    <PersonalGate>
+      <CafeWorkspaceContent {...props} />
+    </PersonalGate>
+  );
+}
+
+function CafeWorkspaceContent({ scenes }: { scenes: SceneDefinition[] }) {
   const [variant, setVariant] = useState(scenes[0]!.variantId);
   const scene = scenes.find((item) => item.variantId === variant)!;
   const [selectedId, setSelectedId] = useState(scene.lines[0]!.id);

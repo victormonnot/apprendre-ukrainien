@@ -1,10 +1,11 @@
+import { withAccount } from "@/lib/server/account-request";
 import { getBackupStore } from "@/lib/server/backup-service";
 import { backupErrorResponse } from "@/lib/server/backup-http";
 import { requireLocalRequest, RequestError } from "@/lib/server/local-request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   try {
     requireLocalRequest(request);
     const params = new URL(request.url).searchParams;
@@ -26,3 +27,5 @@ export async function GET(request: Request) {
     return backupErrorResponse(error);
   }
 }
+
+export const GET = withAccount(handleGET);

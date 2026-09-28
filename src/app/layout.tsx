@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { WorkspaceBoundary } from "@/components/workspace-boundary";
+import { AuthProvider } from "@/components/auth-context";
 import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
 import "@/components/learning-progress.css";
@@ -20,10 +21,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a className="skip-link" href="#main-content">
           Aller au contenu
         </a>
-        <AppSidebar />
-        <div className="workspace">
-          <WorkspaceBoundary>{children}</WorkspaceBoundary>
-        </div>
+        <AuthProvider>
+          <AppSidebar />
+          <div className="workspace">
+            <WorkspaceBoundary>{children}</WorkspaceBoundary>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,3 +1,5 @@
+import { getRequestAccount } from "@/lib/server/account-context";
+import { withAccount } from "@/lib/server/account-request";
 import {
   json,
   requireLocalRequest,
@@ -8,10 +10,13 @@ import { getWorkspaceGeneration } from "@/lib/server/workspace-generation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET(request: Request) {
+function handleGET(request: Request) {
   try {
     requireLocalRequest(request, false, { checkGeneration: false });
-    return json({ generation: getWorkspaceGeneration() });
+    return json({
+      generation: getWorkspaceGeneration(),
+      accountId: getRequestAccount()?.id ?? null,
+    });
   } catch (error) {
     if (error instanceof RequestError)
       return json({ message: error.message }, error.status);
@@ -21,3 +26,5 @@ export function GET(request: Request) {
     );
   }
 }
+
+export const GET = withAccount(handleGET);
