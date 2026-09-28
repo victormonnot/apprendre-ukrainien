@@ -152,6 +152,12 @@ carte. Les aides de prononciation et l’accent apparaissent au verso. Les répo
 ne reçoivent pas de note automatique : les résultats déclarés ne valident ni
 l’oral ni la maîtrise générale du cours.
 
+Après chaque bilan enregistré, la carte disponible suivante s’ouvre directement,
+avec une réponse vierge. Le résumé revient lorsqu’il n’y a plus de carte à revoir
+maintenant. En cas de coupure pendant l’ouverture de la suivante, la notation
+confirmée reste enregistrée et peut être suivie d’une nouvelle tentative de
+chargement. Quitter la page interrompt cet enchaînement.
+
 Le moteur utilise [ts-fsrs](https://open-spaced-repetition.github.io/ts-fsrs/),
 avec une cible de rétention de 0,9, les paramètres généraux de la version fixée
 et sans optimisation personnelle à ce stade. L’apprentissage initial comporte

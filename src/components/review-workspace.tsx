@@ -97,6 +97,7 @@ export function ReviewWorkspace() {
   const cardHeading = useRef<HTMLHeadingElement>(null);
   const answerHeading = useRef<HTMLHeadingElement>(null);
   const summaryHeading = useRef<HTMLHeadingElement>(null);
+  const hadActiveCard = useRef(false);
   const answerId = useId();
   const active = overview?.active;
   const revealed = active?.revealed;
@@ -179,12 +180,18 @@ export function ReviewWorkspace() {
           setLoading(false);
         }
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      // Leaving the page must not reserve another card after an in-flight rating.
+      requestVersion.current += 1;
+    };
   }, [reload]);
 
   useEffect(() => {
     if (activeStatus === "revealed") answerHeading.current?.focus();
     else if (activeId) cardHeading.current?.focus();
+    else if (hadActiveCard.current) summaryHeading.current?.focus();
+    hadActiveCard.current = Boolean(activeId);
   }, [activeId, activeStatus]);
 
   function editAnswer(value: string) {
@@ -220,8 +227,10 @@ export function ReviewWorkspace() {
     setBusy(true);
     setFailure(null);
     setNotice("");
+    let pendingCommand = command;
+    let confirmedRating: ReviewOverview | null = null;
     try {
-      const next = await updateReviews(command);
+      let next = await updateReviews(command);
       if (version !== requestVersion.current) return;
       if (command.type === "reveal") {
         // A lost response can be retried with the same original answer.
@@ -238,9 +247,16 @@ export function ReviewWorkspace() {
         setNotice(
           review
             ? `Révision enregistrée : ${reviewRatingLabels[review.rating]}. Prochain passage le ${fullDate(review.dueAt, next.timeZone)}.`
-            : "Révision enregistrée. Tu peux passer à la carte suivante quand tu le souhaites.",
+            : "Révision enregistrée.",
         );
-        requestAnimationFrame(() => summaryHeading.current?.focus());
+        if (!next.active && next.eligibleCount > 0) {
+          // Keep the card on screen and the request lock until the next one is ready.
+          // A failed continuation must retry start, never an already confirmed rating.
+          confirmedRating = next;
+          pendingCommand = { type: "start" };
+          next = await updateReviews(pendingCommand);
+          if (version !== requestVersion.current) return;
+        }
       } else if (command.type === "activate") {
         setNotice("Cet élément est ajouté à tes révisions actives.");
       } else if (command.type === "suspend") {
@@ -249,13 +265,17 @@ export function ReviewWorkspace() {
       applyOverview(next);
     } catch (cause) {
       if (version !== requestVersion.current) return;
+      if (confirmedRating) applyOverview(confirmedRating);
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : "L’action n’a pas pu être confirmée. Ta réponse est conservée.";
       setFailure({
-        message:
-          cause instanceof Error
-            ? cause.message
-            : "L’action n’a pas pu être confirmée. Ta réponse est conservée.",
+        message: confirmedRating
+          ? `Ta révision est enregistrée, mais la carte suivante n’a pas pu être chargée. ${message}`
+          : message,
         conflict: cause instanceof ReviewRequestError && cause.status === 409,
-        command,
+        command: pendingCommand,
       });
     } finally {
       if (version === requestVersion.current) {
@@ -549,7 +569,7 @@ export function ReviewWorkspace() {
                   disabled={disabled}
                   onClick={() => void send({ type: "start" })}
                 >
-                  {busy ? "Chargement…" : "Commencer une carte"}
+                  {busy ? "Chargement…" : "Commencer les révisions"}
                 </button>
               )}
               <button
@@ -562,8 +582,9 @@ export function ReviewWorkspace() {
               </button>
             </div>
             <p className="review-hint">
-              Horaires : {overview.timeZone}. Une carte révélée reste à évaluer
-              jusqu’à ton prochain passage.
+              Les cartes disponibles s’enchaînent après chaque bilan. Horaires :{" "}
+              {overview.timeZone}. Une carte révélée reste à évaluer jusqu’à ton
+              prochain passage.
             </p>
           </section>
           <section

@@ -152,7 +152,10 @@ test.describe("native spaced reviews", () => {
     const started = await clickCommand(
       page,
       "start",
-      page.getByRole("button", { name: "Commencer une carte", exact: true }),
+      page.getByRole("button", {
+        name: "Commencer les révisions",
+        exact: true,
+      }),
     );
     const attempt = started.active!;
     expect(attempt.elementId).toBe("01-mot-kava");
