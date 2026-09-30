@@ -223,6 +223,178 @@ async function loginForm(page: Page, user: string, secret = password) {
   await expect(page).toHaveURL(/\/parcours$/);
 }
 
+async function delayAuthCheck(page: Page) {
+  const received = Promise.withResolvers<void>();
+  const release = Promise.withResolvers<void>();
+  await page.route(
+    "**/api/auth",
+    async (route) => {
+      const response = await route.fetch();
+      received.resolve();
+      await release.promise;
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  return {
+    received: received.promise,
+    async release() {
+      const response = page.waitForResponse(
+        (response) => new URL(response.url()).pathname === "/api/auth",
+      );
+      release.resolve();
+      await (await response).finished();
+      // Let React commit the verified session before checking preserved state.
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+      );
+    },
+  };
+}
+
+test("returning to the tab keeps the notebook and its draft visible during session checks", async ({
+  page,
+  baseURL,
+}) => {
+  await register(page.request, baseURL, "tab_focus");
+  const input = await openNotebook(page);
+  const draft = "My unfinished note must survive returning to this tab.";
+  await input.fill(draft);
+  await input.evaluate((element: HTMLTextAreaElement) => {
+    element.dataset.retained = "yes";
+    element.setSelectionRange(3, 14);
+  });
+
+  for (const event of ["focus", "visibilitychange"]) {
+    const check = await delayAuthCheck(page);
+    await page.evaluate((event) => {
+      if (event === "focus") window.dispatchEvent(new Event(event));
+      else document.dispatchEvent(new Event(event));
+    }, event);
+    await check.received;
+    await expect(input).toBeVisible();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(draft);
+    await expect(
+      page.getByText("Ouverture de l’application…", { exact: true }),
+    ).toHaveCount(0);
+    await check.release();
+    await expect(input).toBeVisible();
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue(draft);
+    await expect(input).toHaveAttribute("data-retained", "yes");
+    expect(
+      await input.evaluate((element: HTMLTextAreaElement) => [
+        element.selectionStart,
+        element.selectionEnd,
+      ]),
+    ).toEqual([3, 14]);
+  }
+
+  const check = await delayAuthCheck(page);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await check.received;
+  const saved = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/learning" &&
+      response.request().method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Enregistrer ma note", exact: true })
+    .click();
+  expect((await saved).status()).toBe(200);
+  await check.release();
+  await expect(input).toBeVisible();
+  await expect(input).toHaveValue(draft);
+});
+
+test("an account-change signal hides the old notebook while the new account is checked", async ({
+  page,
+  baseURL,
+}) => {
+  await register(page.request, baseURL, "tab_original");
+  const input = await openNotebook(page);
+  await input.fill(
+    "Private unfinished note belonging to the original account.",
+  );
+  await register(page.request, baseURL, "tab_replacement");
+  const check = await delayAuthCheck(page);
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "ukrainian-account-changed" }),
+    );
+  });
+  await check.received;
+  await expect(input).toBeHidden();
+  await expect(
+    page.getByText("Ouverture de l’application…", { exact: true }),
+  ).toBeVisible();
+  // A simultaneous return to the tab must not reveal the stale account.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(input).toBeHidden();
+  await check.release();
+  await expect(
+    page.getByText("Mon suivi et mes notes", { exact: true }),
+  ).toBeVisible();
+  await page.getByText("Mon suivi et mes notes", { exact: true }).click();
+  await expect(input).toBeVisible();
+  await expect(input).toHaveValue("");
+});
+
+test("a session that expired while away removes the private notebook on return", async ({
+  page,
+  baseURL,
+}) => {
+  await register(page.request, baseURL, "tab_expired");
+  const input = await openNotebook(page);
+  await input.fill("An expired session must not retain access to my notebook.");
+  await page.context().clearCookies();
+  const check = await delayAuthCheck(page);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await check.received;
+  await expect(input).toBeVisible();
+  await check.release();
+  await expect(input).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Connecte-toi pour garder tes notes, tes réponses et ta progression dans ton propre espace.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+});
+
+test("a failed return-to-tab session check blocks the notebook until retry succeeds", async ({
+  page,
+  baseURL,
+}) => {
+  await register(page.request, baseURL, "tab_retry");
+  const input = await openNotebook(page);
+  const draft = "A temporary connection failure must preserve this draft.";
+  await input.fill(draft);
+  await page.route(
+    "**/api/auth",
+    (route) =>
+      route.fulfill({
+        status: 503,
+        json: { message: "Session temporairement indisponible." },
+      }),
+    { times: 1 },
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "Session temporairement indisponible." }),
+  ).toBeVisible();
+  await expect(input).toBeHidden();
+  await page.getByRole("button", { name: "Réessayer", exact: true }).click();
+  await expect(input).toBeVisible();
+  await expect(input).toHaveValue(draft);
+});
+
 test("guests can navigate the course while every personal API requires a session", async ({
   page,
   request,

@@ -46,31 +46,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!checking && recovery) recoveryHeading.current?.focus();
   }, [checking, recovery]);
-  const refresh = useCallback(async () => {
-    const request = ++sequence.current.value;
-    suspendWorkspace();
-    setChecking(true);
-    setError("");
-    try {
-      const result = await loadAuth();
-      if (request !== sequence.current.value) return;
-      if (result.enabled && result.account)
-        adoptLegacyWorkspaceDrafts(result.account);
-      configureWorkspaceIdentity(result.enabled, result.account?.id ?? null);
-      setState(result);
-      setRecovery((previous) =>
-        previous?.accountId === result.account?.id ? previous : null,
-      );
-      setChecking(false);
-    } catch (failure) {
-      if (request === sequence.current.value)
-        setError(
-          failure instanceof Error
-            ? failure.message
-            : "Ton espace est indisponible.",
+  const refresh = useCallback(
+    async ({ background = false }: { background?: boolean } = {}) => {
+      const request = ++sequence.current.value;
+      // Routine tab revalidation must not hide the page or disturb its focus.
+      // Known account changes still block the interface until verified.
+      if (!background) {
+        suspendWorkspace();
+        setChecking(true);
+      }
+      setError("");
+      try {
+        const result = await loadAuth();
+        if (request !== sequence.current.value) return;
+        if (result.enabled && result.account)
+          adoptLegacyWorkspaceDrafts(result.account);
+        configureWorkspaceIdentity(result.enabled, result.account?.id ?? null);
+        setState(result);
+        setRecovery((previous) =>
+          previous?.accountId === result.account?.id ? previous : null,
         );
-    }
-  }, []);
+        setChecking(false);
+      } catch (failure) {
+        if (request === sequence.current.value) {
+          suspendWorkspace();
+          setChecking(true);
+          setError(
+            failure instanceof Error
+              ? failure.message
+              : "Ton espace est indisponible.",
+          );
+        }
+      }
+    },
+    [],
+  );
   useEffect(() => {
     const lifecycle = sequence.current;
     let active = true;
@@ -78,21 +88,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active) return refresh();
     });
     const revalidate = () => {
-      if (document.visibilityState === "visible") void refresh();
+      if (document.visibilityState === "visible")
+        void refresh({ background: true });
     };
+    const accountChanged = () => void refresh();
     const storage = (event: StorageEvent) => {
       if (event.key === AUTH_STORAGE_KEY || event.key === null) void refresh();
     };
     window.addEventListener("focus", revalidate);
     window.addEventListener("storage", storage);
-    window.addEventListener("account-changed", revalidate);
+    window.addEventListener("account-changed", accountChanged);
     document.addEventListener("visibilitychange", revalidate);
     return () => {
       active = false;
       lifecycle.value++;
       window.removeEventListener("focus", revalidate);
       window.removeEventListener("storage", storage);
-      window.removeEventListener("account-changed", revalidate);
+      window.removeEventListener("account-changed", accountChanged);
       document.removeEventListener("visibilitychange", revalidate);
     };
   }, [refresh]);
