@@ -5,6 +5,7 @@ import { useWorkspaceStorage } from "@/lib/use-workspace-storage";
 import { PersonalGate } from "./auth-context";
 
 import { AudioPlayer } from "@/components/audio-player";
+import { documentHref, getModule, modules } from "@/content/catalog";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Markdown from "react-markdown";
@@ -85,16 +86,25 @@ function intervalLabel(value: string, now: string) {
   return `Dans ${days} jour${days > 1 ? "s" : ""}`;
 }
 
-export function ReviewWorkspace() {
+export function ReviewWorkspace({
+  initialModuleId,
+}: {
+  initialModuleId?: string;
+}) {
   return (
     <PersonalGate>
-      <ReviewWorkspaceContent />
+      <ReviewWorkspaceContent initialModuleId={initialModuleId} />
     </PersonalGate>
   );
 }
 
-function ReviewWorkspaceContent() {
+function ReviewWorkspaceContent({
+  initialModuleId,
+}: {
+  initialModuleId?: string;
+}) {
   const storage = useWorkspaceStorage();
+  const [moduleId, setModuleId] = useState(initialModuleId ?? "all");
   const [overview, setOverview] = useState<ReviewOverview | null>(null);
   const [answerText, setAnswerText] = useState("");
   const [recovered, setRecovered] = useState<LocalDraft[]>([]);
@@ -113,6 +123,11 @@ function ReviewWorkspaceContent() {
   const hadActiveCard = useRef(false);
   const answerId = useId();
   const active = overview?.active;
+  const selectedModule = getModule(moduleId);
+  const shownElements =
+    overview?.elements.filter(
+      (element) => moduleId === "all" || element.moduleId === moduleId,
+    ) ?? [];
   const revealed = active?.revealed;
   const activeId = active?.id;
   const activeStatus = active?.status;
@@ -613,76 +628,112 @@ function ReviewWorkspaceContent() {
                 <p>
                   {activeElements.length} élément
                   {activeElements.length > 1 ? "s" : ""} actif
-                  {activeElements.length > 1 ? "s" : ""} · Module 01
+                  {activeElements.length > 1 ? "s" : ""} · Tous les modules
                 </p>
               </div>
-              <Link href="/parcours/01/cours">Ouvrir le cours</Link>
+              <Link
+                href={
+                  selectedModule
+                    ? documentHref(selectedModule.id, "cours")
+                    : "/parcours"
+                }
+              >
+                {selectedModule
+                  ? `Ouvrir le cours ${selectedModule.id}`
+                  : "Voir le parcours"}
+              </Link>
             </div>
             <p>
               Ajoute seulement les lettres, mots et formules que tu as étudiés.
               Les mots et les formules se travaillent dans les deux sens. Une
               pause conserve les passages précédents et les échéances.
             </p>
-            {groups.map((group) => (
-              <section className="review-group" key={group.kind}>
-                <h3>{group.title}</h3>
-                <ul className="review-element-list">
-                  {overview.elements
-                    .filter((element) => element.kind === group.kind)
-                    .map((element) => (
-                      <li key={element.id} data-review-element-id={element.id}>
-                        <div className="review-element-description">
-                          <strong lang="uk">{element.label}</strong>
-                          <span>
-                            {element.cardCount} carte
-                            {element.cardCount > 1 ? "s" : ""}
-                            {element.selected
-                              ? element.active
-                                ? " · Actif"
-                                : " · En pause"
-                              : " · Pas encore ajouté"}
-                          </span>
-                        </div>
-                        <div className="review-element-actions">
-                          <Link
-                            href={element.sourceHref}
-                            aria-label={`Revoir ${element.label} dans le cours`}
-                          >
-                            Cours
-                          </Link>
-                          <button
-                            type="button"
-                            className={`button ${element.selected && element.active ? "button-secondary" : "button-primary"}`}
-                            disabled={disabled}
-                            aria-label={
-                              element.selected && element.active
-                                ? `Mettre ${element.label} en pause`
+            <label className="review-module-filter">
+              Éléments à afficher
+              <select
+                value={moduleId}
+                onChange={(event) => setModuleId(event.target.value)}
+              >
+                <option value="all">Tous les modules</option>
+                {modules.map((module) => (
+                  <option key={module.id} value={module.id}>
+                    Module {module.id} · {module.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="review-hint">
+              Ce filtre sert à choisir les éléments à ajouter. Tes révisions
+              continuent à réunir toutes tes cartes actives.
+            </p>
+            {groups
+              .filter((group) =>
+                shownElements.some((element) => element.kind === group.kind),
+              )
+              .map((group) => (
+                <section className="review-group" key={group.kind}>
+                  <h3>{group.title}</h3>
+                  <ul className="review-element-list">
+                    {shownElements
+                      .filter((element) => element.kind === group.kind)
+                      .map((element) => (
+                        <li
+                          key={element.id}
+                          data-review-element-id={element.id}
+                        >
+                          <div className="review-element-description">
+                            <strong lang="uk">{element.label}</strong>
+                            <span>
+                              Module {element.moduleId} · {element.cardCount}{" "}
+                              carte
+                              {element.cardCount > 1 ? "s" : ""}
+                              {element.selected
+                                ? element.active
+                                  ? " · Actif"
+                                  : " · En pause"
+                                : " · Pas encore ajouté"}
+                            </span>
+                          </div>
+                          <div className="review-element-actions">
+                            <Link
+                              href={element.sourceHref}
+                              aria-label={`Revoir ${element.label} dans le cours`}
+                            >
+                              Cours
+                            </Link>
+                            <button
+                              type="button"
+                              className={`button ${element.selected && element.active ? "button-secondary" : "button-primary"}`}
+                              disabled={disabled}
+                              aria-label={
+                                element.selected && element.active
+                                  ? `Mettre ${element.label} en pause`
+                                  : element.selected
+                                    ? `Réactiver ${element.label}`
+                                    : `Ajouter ${element.label} à mes révisions`
+                              }
+                              onClick={() =>
+                                void send({
+                                  type:
+                                    element.selected && element.active
+                                      ? "suspend"
+                                      : "activate",
+                                  elementId: element.id,
+                                })
+                              }
+                            >
+                              {element.selected && element.active
+                                ? "Mettre en pause"
                                 : element.selected
-                                  ? `Réactiver ${element.label}`
-                                  : `Ajouter ${element.label} à mes révisions`
-                            }
-                            onClick={() =>
-                              void send({
-                                type:
-                                  element.selected && element.active
-                                    ? "suspend"
-                                    : "activate",
-                                elementId: element.id,
-                              })
-                            }
-                          >
-                            {element.selected && element.active
-                              ? "Mettre en pause"
-                              : element.selected
-                                ? "Réactiver"
-                                : "Ajouter à mes révisions"}
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              </section>
-            ))}
+                                  ? "Réactiver"
+                                  : "Ajouter à mes révisions"}
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                </section>
+              ))}
           </section>
           <section
             className="review-history"

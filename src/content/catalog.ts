@@ -49,6 +49,42 @@ export const modules: LearningModule[] = [
       },
     ],
   },
+  {
+    id: "02",
+    title: "Se présenter et construire des phrases",
+    description:
+      "Dire qui l’on est, distinguer tu et vous, identifier une chose et construire des questions et des phrases négatives simples.",
+    level: "Débutant",
+    prerequisites: "Après les premiers échanges du module 01",
+    objectives: [
+      "Parler de soi et des autres",
+      "Choisir tu ou vous",
+      "Construire des phrases simples",
+    ],
+    documents: [
+      {
+        view: "cours",
+        label: "Cours",
+        filename: "course.md",
+        description:
+          "Les nouvelles explications, les exemples et les exercices réunis.",
+      },
+      {
+        view: "vocabulaire",
+        label: "Vocabulaire",
+        filename: "vocabulary.md",
+        description:
+          "Les pronoms, les questions et les mots utiles en contexte.",
+      },
+      {
+        view: "exercices",
+        label: "Exercices",
+        filename: "exercises.md",
+        description:
+          "Les exercices du cours, quatre compléments et tes réponses conservées.",
+      },
+    ],
+  },
 ];
 
 export function getModule(id: string) {

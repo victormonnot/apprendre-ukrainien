@@ -355,14 +355,17 @@ function escapeAsterisks(text: string) {
   return text.replaceAll("*", "\\*");
 }
 
-function letterElement(entry: LetterEntry): ReviewElement {
-  const id = `01-${entry.id}`;
+function letterElement(entry: LetterEntry, moduleId = "01"): ReviewElement {
+  const id = `${moduleId}-${entry.id}`;
   return {
     id,
-    moduleId: "01",
+    moduleId,
     kind: "letter",
     label: entry.letter,
-    sourceHref: "/parcours/01/cours#alphabet",
+    sourceHref:
+      moduleId === "01"
+        ? "/parcours/01/cours#alphabet"
+        : `/parcours/${moduleId}/vocabulaire#lettres`,
     cards: [
       {
         id: `${id}-recognition`,
@@ -381,8 +384,8 @@ function letterElement(entry: LetterEntry): ReviewElement {
   };
 }
 
-function wordElement(entry: WordEntry): ReviewElement {
-  const id = `01-${entry.id}`;
+function wordElement(entry: WordEntry, moduleId = "01"): ReviewElement {
+  const id = `${moduleId}-${entry.id}`;
   const details = [
     `Accent tonique : ${entry.syllables} — ${entry.position}.`,
     `Repère français approximatif : ${escapeAsterisks(entry.pronunciation)}.`,
@@ -416,17 +419,261 @@ function wordElement(entry: WordEntry): ReviewElement {
   };
   return {
     id,
-    moduleId: "01",
+    moduleId,
     kind: entry.kind,
     label: entry.ukrainian,
-    sourceHref: `/parcours/01/vocabulaire#${entry.section}`,
+    sourceHref: `/parcours/${moduleId}/vocabulaire#${entry.section}`,
     cards: [comprehension, production],
   };
 }
 
+const module02Letters: LetterEntry[] = [
+  {
+    id: "lettre-d",
+    letter: "Д д",
+    sound: "d",
+    note: "Tu retrouves cette lettre dans студент.",
+  },
+  {
+    id: "lettre-e",
+    letter: "Е е",
+    sound: "è, comme repère de départ",
+    note: "Tu retrouves cette voyelle dans не et студент. Elle est différente de і dans ні.",
+  },
+  {
+    id: "lettre-zh",
+    letter: "Ж ж",
+    sound: "j de « jour »",
+    note: "Ce n’est pas le petit son y de « yaourt ». Tu retrouves ж dans інженер.",
+  },
+  {
+    id: "lettre-ts",
+    letter: "Ц ц",
+    sound: "ts, prononcé comme un ensemble",
+    note: "Ce n’est pas simplement s. Tu retrouves ц dans це.",
+  },
+  {
+    id: "lettre-ya",
+    letter: "Я я",
+    sound: "ya au début du mot",
+    note: "Dans le pronom я, y et a forment une seule syllabe. Après une consonne, я peut signaler son adoucissement, comme dans Дякую.",
+  },
+];
+
+const module02Words: WordEntry[] = [
+  {
+    id: "mot-ya",
+    kind: "word",
+    ukrainian: "я",
+    meaning: "je — comme sujet",
+    productionCue: "Je — le pronom sujet quand tu parles de toi",
+    context: "Le mot est utilisé comme sujet, par exemple dans Я студент.",
+    syllables: "**я**",
+    position: "Une seule syllabe",
+    pronunciation: "ya",
+    note: "Ce pronom ne dit pas si la personne est un homme ou une femme. Garde Мене звати comme un autre modèle : on n’y remplace pas мене par я.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-ty",
+    kind: "word",
+    ukrainian: "ти",
+    meaning: "tu — une seule personne tutoyée",
+    productionCue: "Tu — pronom sujet pour un ami que tu tutoies",
+    context: "Tu t’adresses à un ami, une seule personne.",
+    syllables: "**ти**",
+    position: "Une seule syllabe",
+    pronunciation: "ti*",
+    note: "À distinguer de ви, qui peut vouvoyer une personne ou s’adresser à un groupe. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-vin",
+    kind: "word",
+    ukrainian: "він",
+    meaning: "il — ici pour un homme",
+    productionCue: "Il — pronom sujet quand tu parles d’un homme",
+    context: "Tu parles d’un homme, une seule personne.",
+    syllables: "**він**",
+    position: "Une seule syllabe",
+    pronunciation: "vin — i puis n, sans nasaliser",
+    note: "Pour les choses, він suit le genre du nom ukrainien, qui ne correspond pas forcément au français. Dans les exemples du module, il désigne surtout une personne masculine.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-vona",
+    kind: "word",
+    ukrainian: "вона",
+    meaning: "elle — ici pour une femme",
+    productionCue: "Elle — pronom sujet quand tu parles d’Anna",
+    context: "Tu parles d’Anna, une seule personne.",
+    syllables: "во-**на**",
+    position: "2e syllabe",
+    pronunciation: "vo-NA",
+    note: "À distinguer de вони, qui parle de plusieurs personnes ou choses. Pour les choses, вона suit le genre du nom ukrainien.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-my",
+    kind: "word",
+    ukrainian: "ми",
+    meaning: "nous — comme sujet",
+    productionCue: "Nous — pronom sujet pour toi et Anna ensemble",
+    context: "Tu parles de toi et d’Anna ensemble.",
+    syllables: "**ми**",
+    position: "Une seule syllabe",
+    pronunciation: "mi*",
+    note: "Le groupe comprend la personne qui parle. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-vy",
+    kind: "word",
+    ukrainian: "ви",
+    meaning: "vous — plusieurs personnes, ou une seule par politesse",
+    productionCue: "Vous — pronom sujet pour une personne que tu vouvoies",
+    context:
+      "Le pronom peut viser une personne vouvoyée ou plusieurs interlocuteurs.",
+    syllables: "**ви**",
+    position: "Une seule syllabe",
+    pronunciation: "vi*",
+    note: "Le nom décrit la personne ou le groupe réel : Ви студент? s’adresse à un homme, Ви студенти? à plusieurs étudiants. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-vony",
+    kind: "word",
+    ukrainian: "вони",
+    meaning: "ils / elles — plusieurs personnes ou choses",
+    productionCue:
+      "Ils ou elles — pronom sujet quand tu parles de plusieurs personnes",
+    context:
+      "Tu parles de plusieurs personnes, sans faire partie de ce groupe.",
+    syllables: "во-**ни**",
+    position: "2e syllabe",
+    pronunciation: "vo-NI*",
+    note: "Le même pronom sert pour « ils » et « elles ». À distinguer de він et вона au singulier. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "pronoms",
+  },
+  {
+    id: "mot-student",
+    kind: "word",
+    ukrainian: "студент",
+    meaning: "étudiant — masculin singulier",
+    productionCue: "Étudiant — un homme, dans l’enseignement supérieur",
+    context: "Un seul homme poursuit des études supérieures.",
+    syllables: "сту-**дент**",
+    position: "2e syllabe",
+    pronunciation: "stou-DÈNT — è puis n puis t",
+    note: "Le n et le t se prononcent ; pas de voyelle nasale française. Formes de cette famille : студент, студентка, студенти.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-studentka",
+    kind: "word",
+    ukrainian: "студентка",
+    meaning: "étudiante — féminin singulier",
+    productionCue: "Étudiante — une femme, dans l’enseignement supérieur",
+    context: "Une seule femme poursuit des études supérieures.",
+    syllables: "сту-**ден**-тка",
+    position: "2e syllabe",
+    pronunciation: "stou-DÈN-tka — è puis n, sans nasaliser",
+    note: "La terminaison -ка correspond ici au féminin. Cela décrit cette famille, pas tous les noms ukrainiens.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-studenty",
+    kind: "word",
+    ukrainian: "студенти",
+    meaning: "étudiants — pluriel, groupe masculin ou mixte",
+    productionCue:
+      "Étudiants — plusieurs personnes, un groupe masculin ou mixte",
+    context:
+      "Plusieurs personnes poursuivent des études supérieures ; le groupe est masculin ou mixte.",
+    syllables: "сту-**ден**-ти",
+    position: "2e syllabe",
+    pronunciation: "stou-DÈN-ti* — è puis n, sans nasaliser",
+    note: "Le pronom et le nom changent : Він студент. → Вони студенти. Les pluriels féminins viendront plus tard. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-inzhener",
+    kind: "word",
+    ukrainian: "інженер",
+    meaning: "ingénieur — masculin singulier",
+    productionCue: "Ingénieur — un homme, une seule personne",
+    context: "Un seul homme exerce ce métier.",
+    syllables: "ін-же-**нер**",
+    position: "3e syllabe",
+    pronunciation: "in-jè-NÈR — i puis n, sans nasaliser",
+    note: "Le j est celui de « jour ». Le r final se prononce avec la pointe de la langue. Formes de cette famille : інженер, інженерка, інженери.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-inzhenerka",
+    kind: "word",
+    ukrainian: "інженерка",
+    meaning: "ingénieure — féminin singulier",
+    productionCue: "Ingénieure — une femme, une seule personne",
+    context: "Une seule femme exerce ce métier.",
+    syllables: "ін-же-**нер**-ка",
+    position: "3e syllabe",
+    pronunciation: "in-jè-NÈR-ka — i puis n, sans nasaliser",
+    note: "La terminaison -ка correspond ici au féminin. L’accent reste sur la même voyelle que dans інженер.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-inzhenery",
+    kind: "word",
+    ukrainian: "інженери",
+    meaning: "ingénieurs — pluriel, groupe masculin ou mixte",
+    productionCue:
+      "Ingénieurs — plusieurs personnes, un groupe masculin ou mixte",
+    context:
+      "Plusieurs personnes exercent ce métier ; le groupe est masculin ou mixte.",
+    syllables: "ін-же-**не**-ри",
+    position: "3e syllabe",
+    pronunciation: "in-jè-NÈ-ri* — i puis n, sans nasaliser",
+    note: "Le pronom et le nom changent : Він інженер. → Вони інженери. i* représente и : une voyelle plus relâchée, distincte de і. L’astérisque n’ajoute aucun son.",
+    section: "personnes-et-metiers",
+  },
+  {
+    id: "mot-tse",
+    kind: "word",
+    ukrainian: "це",
+    meaning: "c’est… / ce sont… — pour identifier ce qu’on montre",
+    productionCue:
+      "Le mot qui introduit « c’est… » ou « ce sont… » pour identifier ce qu’on montre",
+    context: "Le mot introduit une identification : Це кава. ou Це студенти.",
+    syllables: "**це**",
+    position: "Une seule syllabe",
+    pronunciation: "tsè",
+    note: "Це reste identique au singulier et au pluriel. Ce n’est pas le verbe « être » ; ne l’ajoute pas dans Я студент.",
+    section: "petits-mots",
+  },
+  {
+    id: "mot-ne",
+    kind: "word",
+    ukrainian: "не",
+    meaning: "ne… pas — négation à l’intérieur de la phrase",
+    productionCue:
+      "Le mot de négation devant le nom dans « je ne suis pas étudiant » — pas la réponse « non »",
+    context:
+      "Le mot nie ce qui suit à l’intérieur d’une phrase, par exemple Я не студент.",
+    syllables: "не",
+    position:
+      "Une seule syllabe ; généralement sans accent propre dans ces phrases",
+    pronunciation: "nè",
+    note: "Не reste séparé du nom par une espace. Ні, avec і, sert à répondre « non » ; не, avec е, nie ce qui suit. Il n’y a pas de deuxième mot pour « pas » dans ces modèles.",
+    section: "petits-mots",
+  },
+];
+
 export const reviewElements: ReviewElement[] = [
-  ...letters.map(letterElement),
-  ...words.map(wordElement),
+  ...letters.map((entry) => letterElement(entry)),
+  ...words.map((entry) => wordElement(entry)),
+  ...module02Letters.map((entry) => letterElement(entry, "02")),
+  ...module02Words.map((entry) => wordElement(entry, "02")),
 ];
 
 export function getReviewElement(id: string) {

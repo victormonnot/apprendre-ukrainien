@@ -46,10 +46,15 @@ test("the exercise catalogue matches the source titles and keeps stable, unique 
   );
   const headings = Array.from(source.matchAll(/^### Exercice (\d+) — (.+)$/gm));
   assert.equal(headings.length, 13);
-  assert.equal(exercises.length, headings.length);
+  const firstModule = getModuleExercises("01");
+  assert.equal(firstModule.length, headings.length);
+  assert.equal(
+    new Set(exercises.map((exercise) => exercise.id)).size,
+    exercises.length,
+  );
   const itemCounts = [7, 5, 5, 5, 6, 3, 4, 4, 4, 6, 4, 4, 3];
   const allItemIds = new Set<string>();
-  for (const [index, exercise] of exercises.entries()) {
+  for (const [index, exercise] of firstModule.entries()) {
     assert.equal(exercise.id, `01-${index + 1}`);
     assert.equal(
       exercise.title,
@@ -83,7 +88,7 @@ test("the exercise catalogue matches the source titles and keeps stable, unique 
       }
     }
   }
-  assert.deepEqual(getModuleExercises("01"), exercises);
+  assert.deepEqual(getModuleExercises("01"), firstModule);
   assert.deepEqual(getModuleExercises("99"), []);
   assert.equal(getExercise("../01-1"), undefined);
   assert.equal(getExerciseByNumber("01", 99), undefined);

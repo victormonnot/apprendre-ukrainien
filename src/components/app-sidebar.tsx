@@ -3,11 +3,27 @@
 import Link from "next/link";
 import { useAuth } from "./auth-context";
 import { usePathname } from "next/navigation";
+import { documentHref, getModule, type DocumentView } from "@/content/catalog";
 
-const items = [
+const items: {
+  href: string;
+  label: string;
+  symbol: string;
+  view?: DocumentView;
+}[] = [
   { href: "/parcours", label: "Parcours", symbol: "01" },
-  { href: "/parcours/01/vocabulaire", label: "Vocabulaire", symbol: "Аа" },
-  { href: "/parcours/01/exercices", label: "Exercices", symbol: "✎" },
+  {
+    href: "/parcours?view=vocabulaire",
+    label: "Vocabulaire",
+    symbol: "Аа",
+    view: "vocabulaire",
+  },
+  {
+    href: "/parcours?view=exercices",
+    label: "Exercices",
+    symbol: "✎",
+    view: "exercices",
+  },
   { href: "/atelier", label: "Atelier", symbol: "↔" },
   { href: "/studio", label: "Studio d’écoute", symbol: "♫" },
   { href: "/cafe", label: "Le café", symbol: "☕" },
@@ -18,6 +34,9 @@ const items = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const currentModule = getModule(
+    pathname.match(/^\/parcours\/([^/]+)\//)?.[1] ?? "",
+  );
   const { enabled, account } = useAuth();
   return (
     <aside className="app-sidebar">
@@ -38,24 +57,30 @@ export function AppSidebar() {
         {enabled && !account ? "Découvrir" : "Mon espace"}
       </p>
       <nav className="main-nav" aria-label="Navigation principale">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={
-              pathname === item.href ||
-              (item.href === "/ressources" &&
-                pathname.startsWith("/ressources/"))
-                ? "page"
-                : undefined
-            }
-          >
-            <span className="nav-symbol" aria-hidden="true">
-              {item.symbol}
-            </span>
-            {item.label}
-          </Link>
-        ))}
+        {items.map((item) => {
+          const href =
+            currentModule && item.view
+              ? documentHref(currentModule.id, item.view)
+              : item.href;
+          return (
+            <Link
+              key={item.href}
+              href={href}
+              aria-current={
+                pathname === href ||
+                (item.href === "/ressources" &&
+                  pathname.startsWith("/ressources/"))
+                  ? "page"
+                  : undefined
+              }
+            >
+              <span className="nav-symbol" aria-hidden="true">
+                {item.symbol}
+              </span>
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
       {enabled && (
         <div className="sidebar-account">

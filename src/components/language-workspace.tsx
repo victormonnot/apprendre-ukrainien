@@ -489,7 +489,7 @@ function Workshop({ query }: { query: string }) {
                 </summary>
                 <div className="language-reference-body">
                   <p className="language-hint">
-                    Référence du cours · module 01
+                    Référence du cours · module {reference.moduleId}
                   </p>
                   <Markdown skipHtml rehypePlugins={[rehypeUkrainianLanguage]}>
                     {reference.details}

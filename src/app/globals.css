@@ -362,6 +362,17 @@ p {
   color: var(--muted);
   font-size: 0.875rem;
 }
+.module-document-links,
+.module-neighbours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+.module-neighbours {
+  margin: 0 0 1.5rem;
+}
 .work-method {
   margin-top: 3rem;
 }
@@ -814,6 +825,7 @@ nav[aria-label="Sommaire"] a:hover {
   .skip-link,
   .document-toolbar,
   .document-tabs,
+  .module-neighbours,
   .desktop-toc,
   .mobile-toc,
   .document-footer,

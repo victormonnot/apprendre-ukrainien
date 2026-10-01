@@ -4,6 +4,7 @@ import type {
   ExerciseDefinition,
   FieldAssessment,
 } from "../exercise-types.ts";
+import { gradeModule02Field } from "./module02-grading.ts";
 
 const vocabulary: Record<string, string> = {
   кава: "café, la boisson",
@@ -280,7 +281,14 @@ export function gradeExercise(
   definition: ExerciseDefinition,
   answers: ExerciseAnswers,
 ): ExerciseAssessment {
-  if (definition.moduleId !== "01" || definition.version !== 1) {
+  const assess =
+    definition.moduleId === "01"
+      ? assessField
+      : definition.moduleId === "02" &&
+          definition.id === `02-${definition.number}`
+        ? gradeModule02Field
+        : null;
+  if (!assess || definition.version !== 1) {
     return {
       status: "pending",
       items: definition.items.map((item) => ({
@@ -297,7 +305,7 @@ export function gradeExercise(
   const items = definition.items.map((item) => ({
     itemId: item.id,
     fields: item.fields.map((field) =>
-      assessField(item.id, field.id, answers[item.id]?.fields[field.id] ?? ""),
+      assess(item.id, field.id, answers[item.id]?.fields[field.id] ?? ""),
     ),
   }));
   const fields = items.flatMap((item) => item.fields);

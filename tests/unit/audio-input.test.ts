@@ -16,17 +16,42 @@ import { prepareDocument } from "../../src/lib/markdown.ts";
 const context = { getResult: () => null, getActiveReview: () => null };
 test("listening segments keep the existing Ukrainian words and explicit course origins", () => {
   const segments = audioGroups.flatMap((group) => group.segments);
-  assert.equal(segments.length, 22);
-  assert.equal(new Set(segments.map((segment) => segment.id)).size, 22);
-  const source = readFileSync("src/content/modules/01/course.md", "utf8");
+  assert.equal(segments.length, 49);
+  assert.equal(new Set(segments.map((segment) => segment.id)).size, 49);
+  const previousSegments = segments.filter((segment) =>
+    segment.id.startsWith("01-"),
+  );
+  assert.equal(previousSegments.length, 22);
+  assert.deepEqual(
+    audioGroups.slice(0, 3).map((group) => [group.id, group.segments.length]),
+    [
+      ["words", 11],
+      ["expressions", 8],
+      ["presentation", 3],
+    ],
+  );
+  assert.deepEqual(
+    previousSegments
+      .filter((segment) => segment.source.kind === "segment")
+      .map((segment) => [segment.id, segment.text]),
+    [
+      ["01-presentation-maxime", "Мене звати Максим."],
+      ["01-presentation-anna", "Мене звати Анна."],
+      ["01-salutation-presentation", "Добрий день! Мене звати Максим."],
+    ],
+  );
   for (const segment of segments) {
     assert.ok(segment.text.length > 0 && segment.text.length <= 1000);
     assert.equal(resolveAudioText(segment.source, context), segment.text);
     const [, , moduleId, view] = segment.sourceHref.split(/[\/#]/);
+    assert.ok(moduleId === "01" || moduleId === "02");
+    assert.ok(segment.id.startsWith(`${moduleId}-`));
     const filename = view === "cours" ? "course" : "vocabulary";
-    const { sections } = prepareDocument(
-      readFileSync(`src/content/modules/${moduleId}/${filename}.md`, "utf8"),
+    const source = readFileSync(
+      `src/content/modules/${moduleId}/${filename}.md`,
+      "utf8",
     );
+    const { sections } = prepareDocument(source);
     assert.ok(
       sections.some(
         (section) => section.id === segment.sourceHref.split("#")[1],

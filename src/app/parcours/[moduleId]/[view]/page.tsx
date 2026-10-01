@@ -5,6 +5,7 @@ import { CourseMarkdown } from "@/components/course-markdown";
 import { PrintButton } from "@/components/document-tools";
 import { TableOfContents } from "@/components/table-of-contents";
 import { documentHref, modules } from "@/content/catalog";
+import { audioGroups } from "@/content/audio";
 import { getCourseDocument } from "@/lib/course-content";
 import { ContextualLanguageTools } from "@/components/contextual-language-tools";
 import { DocumentProgress } from "@/components/document-progress";
@@ -39,6 +40,17 @@ export default async function CourseDocumentPage({ params }: PageProps) {
   const data = await getCourseDocument(moduleId, view);
   if (!data) notFound();
   const { module, document, markdown, sections } = data;
+  const moduleIndex = modules.findIndex((item) => item.id === module.id);
+  const previousModule = modules[moduleIndex - 1];
+  const nextModule = modules[moduleIndex + 1];
+  const firstAudioSegment = audioGroups
+    .flatMap((group) => group.segments)
+    .find((segment) =>
+      segment.sourceHref.startsWith(`/parcours/${module.id}/`),
+    );
+  const studioHref = firstAudioSegment
+    ? `/studio?element=${encodeURIComponent(firstAudioSegment.id)}`
+    : "/studio";
 
   return (
     <main id="main-content" className="page document-page" tabIndex={-1}>
@@ -77,6 +89,18 @@ export default async function CourseDocumentPage({ params }: PageProps) {
           </Link>
         ))}
       </nav>
+      <nav className="module-neighbours" aria-label="Passer à un autre module">
+        {previousModule && (
+          <Link href={documentHref(previousModule.id, document.view)}>
+            ← Module {previousModule.id} · {previousModule.title}
+          </Link>
+        )}
+        {nextModule && (
+          <Link href={documentHref(nextModule.id, document.view)}>
+            Module {nextModule.id} · {nextModule.title} →
+          </Link>
+        )}
+      </nav>
       <DocumentProgress
         key={`${module.id}/${document.view}`}
         moduleId={module.id}
@@ -86,10 +110,19 @@ export default async function CourseDocumentPage({ params }: PageProps) {
       {(view === "cours" || view === "vocabulaire") && (
         <p className="document-review-link">
           Pour retrouver ce que tu viens d’étudier :{" "}
-          <Link href="/revisions">choisir mes éléments à réviser</Link> ou{" "}
-          <Link href="/studio">écouter et répéter dans le studio</Link>, puis{" "}
-          <Link href="/cafe">retrouver ces expressions au café</Link>.{" "}
-          <Link href="/ressources">Podcasts et vidéos du module</Link>.
+          <Link href={`/revisions?module=${module.id}`}>
+            choisir mes éléments à réviser
+          </Link>{" "}
+          ou <Link href={studioHref}>écouter et répéter dans le studio</Link>,
+          puis{" "}
+          {module.id === "01" ? (
+            <>
+              <Link href="/cafe">retrouver ces expressions au café</Link>.{" "}
+              <Link href="/ressources">Podcasts et vidéos du module</Link>.
+            </>
+          ) : (
+            <>revenir aux exemples du cours.</>
+          )}
         </p>
       )}
       <details className="mobile-toc">

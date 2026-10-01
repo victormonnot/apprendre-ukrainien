@@ -94,10 +94,17 @@ test.describe("native spaced reviews", () => {
     request,
   }) => {
     const initial = await overview(request);
-    expect(initial.elements).toHaveLength(31);
-    expect(
-      initial.elements.reduce((total, item) => total + item.cardCount, 0),
-    ).toBe(50);
+    const firstModule = initial.elements.filter(
+      (element) => element.moduleId === "01",
+    );
+    const secondModule = initial.elements.filter(
+      (element) => element.moduleId === "02",
+    );
+    expect(firstModule).toHaveLength(31);
+    expect(secondModule.length).toBeGreaterThan(0);
+    expect(firstModule.reduce((total, item) => total + item.cardCount, 0)).toBe(
+      50,
+    );
     expect(
       initial.elements.every(
         (item) => !item.selected && !item.active && item.reviewedCount === 0,
@@ -113,8 +120,24 @@ test.describe("native spaced reviews", () => {
     await expect(
       page.getByRole("heading", { name: "Mes révisions", exact: true }),
     ).toBeVisible();
+    await expect(page.locator("[data-review-element-id]")).toHaveCount(
+      initial.elements.length,
+    );
+    await page
+      .getByRole("combobox", { name: "Éléments à afficher", exact: true })
+      .selectOption("01");
     await expect(page.locator("[data-review-element-id]")).toHaveCount(31);
     await expect(element(page, "01-mot-kava")).toContainText("кава");
+    await page
+      .getByRole("combobox", { name: "Éléments à afficher", exact: true })
+      .selectOption("02");
+    await expect(page.locator("[data-review-element-id]")).toHaveCount(
+      secondModule.length,
+    );
+    await expect(element(page, "01-mot-kava")).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Ouvrir le cours 02", exact: true }),
+    ).toHaveAttribute("href", "/parcours/02/cours");
     await expect(activeCard(page)).toHaveCount(0);
     await page.goto("/parcours/01/vocabulaire");
     await expect(

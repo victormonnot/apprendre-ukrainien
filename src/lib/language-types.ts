@@ -47,6 +47,7 @@ export type LanguageResult = {
 };
 export type LanguageReference = {
   id: string;
+  moduleId: string;
   label: string;
   kind: "letter" | "word" | "expression";
   french: string;

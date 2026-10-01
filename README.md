@@ -2,28 +2,37 @@
 
 Application web pour apprendre l’ukrainien en français.
 
-Le premier module propose un cours complet, une fiche de vocabulaire et une fiche
+Deux modules proposent chacun un cours complet, une fiche de vocabulaire et une fiche
 d’exercices à réaliser dans l’application ou sur papier. Les trois supports partagent une navigation, un sommaire
 et une mise en page d’impression, sur ordinateur et téléphone.
+
+- **01 — Lire le cyrillique et faire un premier échange** : lettres, premiers mots,
+  salutations et présentation.
+- **02 — Se présenter et construire des phrases** : cinq nouvelles lettres,
+  pronoms, tutoiement et vouvoiement, identification au présent, étudiant/ingénieur,
+  négation et questions simples.
 
 Chaque support possède un point de reprise, une note personnelle et un bilan de
 travail déclaratif. Ces données sont conservées dans une base SQLite sur le serveur.
 Une consultation n’attribue aucun résultat d’apprentissage.
 
-Les treize exercices permettent d’enregistrer un brouillon, de remettre ses
+Les 25 exercices (13 dans le module 01, 12 dans le module 02) permettent d’enregistrer un brouillon, de remettre ses
 réponses puis de réessayer en conservant les tentatives précédentes. Les réponses
 écrites vérifiables reçoivent une correction automatique ; les productions libres
 et variantes non reconnues restent à vérifier. L’atelier propose une relecture
 générée à la demande, distincte de la correction de référence. Un lecteur commun
 et un studio permettent d’écouter et de répéter les mots et phrases.
 
-Les révisions espacées sont intégrées à l’application : 31 éléments du premier
-module proposent 50 cartes courtes. La sélection et l’historique de révision
-sont propres à chaque espace personnel.
+Les révisions espacées sont intégrées à l’application : 51 éléments proposent
+85 cartes courtes, dont 35 nouvelles cartes dans le module 02. Un filtre par
+module facilite la sélection ; la session de révision reste cumulative.
+L’ajout d’un module n’active aucune carte et ne modifie pas les anciennes échéances.
+La sélection et l’historique de révision sont propres à chaque espace personnel.
 
 La médiathèque relie des podcasts, une vidéo et un guide audio aux passages du
-module. Chaque ressource possède un objectif d’écoute, des notes personnelles
+premier module. Chaque ressource possède un objectif d’écoute, des notes personnelles
 et, pour les lecteurs intégrés, un repère de reprise.
+Le cours 02 propose aussi ses liens d’écoute et de référence.
 
 ## Prérequis
 
@@ -196,7 +205,7 @@ conservés avec la révision pour permettre les évolutions du planificateur.
 
 ### Recherche et atelier
 
-**Atelier** réunit une recherche français/ukrainien dans les références du module,
+**Atelier** réunit une recherche français/ukrainien dans les références des modules,
 la traduction contextualisée, l’explication d’un passage et la relecture d’un
 texte. Sélectionner un passage dans un support permet de l’ouvrir avec son
 contexte et un lien de retour. Une recherche locale ne contacte aucun fournisseur.
@@ -261,8 +270,10 @@ au café où chaque personnage garde sa propre voix. Changer de voix arrête la
 lecture des lecteurs qui suivent cette préférence ; une nouvelle écoute reste
 un choix explicite. Les enregistrements précédents restent conservés.
 
-**Studio d’écoute** propose les mots et formules du module, puis trois extraits
-pour se présenter. Choisir entre :
+**Studio d’écoute** propose les mots et formules du premier module, trois extraits
+pour se présenter, puis les pronoms et métiers du module 02 et douze phrases pour
+construire, nier et interroger. Les questions conservent leur propre source audio,
+distincte d’une affirmation avec les mêmes mots. Choisir entre :
 
 - **Écouter** : une écoute, puis réécoute libre.
 - **Répéter après** : une série de 1, 3 ou 5 écoutes, avec 2, 4 ou 6 secondes de

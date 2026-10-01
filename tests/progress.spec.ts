@@ -353,6 +353,57 @@ test.describe("personal learning workspace", () => {
     );
   });
 
+  test("keeps the next module's note and reading checkpoint separate from the first module", async ({
+    page,
+    request,
+  }) => {
+    const firstModule = await courseState(request);
+    await page.goto("/parcours/02/cours");
+    const note = await openNotebook(page);
+    const text = "Module 02 : distinguer ти et ви dans les questions.";
+    await note.fill(text);
+    const saved = noteResponse(page, 200);
+    await page
+      .getByRole("button", { name: "Enregistrer ma note", exact: true })
+      .click();
+    await saved;
+    await page
+      .getByLabel("Passage à retrouver", { exact: true })
+      .selectOption("pronoms");
+    const checkpoint = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === endpoint &&
+        response.request().method() === "POST" &&
+        response.request().postDataJSON()?.type === "checkpoint" &&
+        response.ok(),
+    );
+    await page
+      .getByRole("button", { name: "Garder ce passage", exact: true })
+      .click();
+    await checkpoint;
+    const current = await overview(request);
+    expect(
+      current.documents.find(
+        (document) => document.moduleId === "01" && document.view === "cours",
+      ),
+    ).toEqual(firstModule);
+    expect(
+      current.documents.find(
+        (document) => document.moduleId === "02" && document.view === "cours",
+      ),
+    ).toMatchObject({ note: { text }, checkpoint: { sectionId: "pronoms" } });
+    await page.goto("/parcours");
+    await expect(
+      page.getByRole("link", { name: "Reprendre ma lecture", exact: true }),
+    ).toHaveAttribute("href", "/parcours/02/cours#pronoms");
+    await page
+      .getByRole("link", { name: "Reprendre ma lecture", exact: true })
+      .click();
+    await expect(await openNotebook(page)).toHaveValue(text);
+    await page.reload();
+    await expect(await openNotebook(page)).toHaveValue(text);
+  });
+
   test("validates commands and rejects writes from another origin", async ({
     request,
     baseURL,

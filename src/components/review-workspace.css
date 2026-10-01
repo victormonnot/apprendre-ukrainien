@@ -252,6 +252,24 @@
   margin: 0.35rem 0 0;
   font-size: 0.875rem;
 }
+.review-module-filter {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.review-module-filter select {
+  width: 100%;
+  max-width: 34rem;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
 .review-group > h3 {
   padding-bottom: 0.6rem;
   border-bottom: 1px solid var(--border);

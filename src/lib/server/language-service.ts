@@ -47,6 +47,7 @@ export const languageReferences: LanguageReference[] = reviewElements.map(
     const card = element.cards[0]!;
     return {
       id: element.id,
+      moduleId: element.moduleId,
       label: element.label,
       kind: element.kind,
       french: card.answer,

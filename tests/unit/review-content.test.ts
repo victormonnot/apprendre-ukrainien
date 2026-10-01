@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  audioGroups,
+  findAudioSegment,
+  presentationSegments,
+} from "../../src/content/audio.ts";
+import {
   getReviewCard,
   getReviewElement,
   reviewElements,
@@ -14,6 +19,20 @@ const course = readFileSync(
 const vocabulary = readFileSync(
   new URL("../../src/content/modules/01/vocabulary.md", import.meta.url),
   "utf8",
+);
+const module02Course = readFileSync(
+  new URL("../../src/content/modules/02/course.md", import.meta.url),
+  "utf8",
+);
+const module02Vocabulary = readFileSync(
+  new URL("../../src/content/modules/02/vocabulary.md", import.meta.url),
+  "utf8",
+);
+const module01Elements = reviewElements.filter(
+  (element) => element.moduleId === "01",
+);
+const module02Elements = reviewElements.filter(
+  (element) => element.moduleId === "02",
 );
 
 function section(markdown: string, anchor: string) {
@@ -32,7 +51,7 @@ test("review content covers the priority alphabet and the words taught in the mo
   const priorityLetters = course.match(/\*\*(А а ·.+)\*\*/)?.[1]?.split(" · ");
   assert.ok(priorityLetters);
   assert.deepEqual(
-    reviewElements
+    module01Elements
       .filter((element) => element.kind === "letter")
       .map((element) => element.label),
     priorityLetters,
@@ -43,16 +62,16 @@ test("review content covers the priority alphabet and the words taught in the mo
     "mots-complementaires",
   ].flatMap((anchor) => tableLabels(section(vocabulary, anchor)));
   assert.deepEqual(
-    reviewElements
+    module01Elements
       .filter((element) => element.kind !== "letter")
       .map((element) => element.label),
     taughtWords,
   );
-  assert.equal(reviewElements.length, 31);
-  assert.equal(reviewElements.flatMap((element) => element.cards).length, 50);
+  assert.equal(module01Elements.length, 31);
+  assert.equal(module01Elements.flatMap((element) => element.cards).length, 50);
 });
 
-test("learning item and card identifiers are unique and independent of editable wording", () => {
+test("module 01 learning item identifiers remain unchanged", () => {
   const expectedIds = [
     "lettre-a",
     "lettre-m",
@@ -87,12 +106,73 @@ test("learning item and card identifiers are unique and independent of editable 
     "mot-syr",
   ].map((id) => `01-${id}`);
   assert.deepEqual(
-    reviewElements.map((element) => element.id),
+    module01Elements.map((element) => element.id),
     expectedIds,
+  );
+});
+
+test("module 02 reviews cover its five letters and fifteen taught words without duplicating module 01", () => {
+  assert.deepEqual(
+    module02Elements
+      .filter((element) => element.kind === "letter")
+      .map((element) => element.label),
+    tableLabels(section(module02Vocabulary, "lettres")),
+  );
+  assert.deepEqual(
+    module02Elements
+      .filter((element) => element.kind !== "letter")
+      .map((element) => element.label),
+    ["pronoms", "personnes-et-metiers", "petits-mots"].flatMap((anchor) =>
+      tableLabels(section(module02Vocabulary, anchor)),
+    ),
+  );
+  assert.deepEqual(
+    module02Elements.map((element) => element.id),
+    [
+      "lettre-d",
+      "lettre-e",
+      "lettre-zh",
+      "lettre-ts",
+      "lettre-ya",
+      "mot-ya",
+      "mot-ty",
+      "mot-vin",
+      "mot-vona",
+      "mot-my",
+      "mot-vy",
+      "mot-vony",
+      "mot-student",
+      "mot-studentka",
+      "mot-studenty",
+      "mot-inzhener",
+      "mot-inzhenerka",
+      "mot-inzhenery",
+      "mot-tse",
+      "mot-ne",
+    ].map((id) => `02-${id}`),
+  );
+  assert.equal(module02Elements.length, 20);
+  assert.equal(module02Elements.flatMap((element) => element.cards).length, 35);
+  assert.equal(reviewElements.length, 51);
+  assert.equal(reviewElements.flatMap((element) => element.cards).length, 85);
+  const previousLabels = new Set(
+    module01Elements.map((element) => element.label),
+  );
+  for (const element of module02Elements) {
+    assert.ok(!previousLabels.has(element.label), element.label);
+    assert.notEqual(element.label, "воно");
+  }
+});
+
+test("learning item and card identifiers are unique and independent of editable wording", () => {
+  assert.equal(
+    new Set(reviewElements.map((element) => element.id)).size,
+    reviewElements.length,
   );
   const cardIds = new Set<string>();
   for (const element of reviewElements) {
-    assert.equal(element.moduleId, "01");
+    assert.ok(["01", "02"].includes(element.moduleId));
+    assert.ok(element.id.startsWith(`${element.moduleId}-`));
     assert.equal(getReviewElement(element.id), element);
     assert.deepEqual(
       element.cards.map((card) => card.direction),
@@ -122,13 +202,18 @@ test("learning item and card identifiers are unique and independent of editable 
 
 test("every source link returns to the passage that introduces the item", () => {
   for (const element of reviewElements) {
-    const match = /^\/parcours\/01\/(cours|vocabulaire)#([a-z-]+)$/.exec(
+    const match = /^\/parcours\/(01|02)\/(cours|vocabulaire)#([a-z-]+)$/.exec(
       element.sourceHref,
     );
     assert.ok(match, element.sourceHref);
+    assert.equal(match[1], element.moduleId);
+    const sources =
+      match[1] === "01"
+        ? { cours: course, vocabulaire: vocabulary }
+        : { cours: module02Course, vocabulaire: module02Vocabulary };
     const sourceSection = section(
-      match[1] === "cours" ? course : vocabulary,
-      match[2]!,
+      sources[match[2] as keyof typeof sources],
+      match[3]!,
     );
     assert.ok(
       sourceSection.includes(element.label),
@@ -152,10 +237,15 @@ test("fronts use ordinary spelling while stress and approximate reading remain o
         assert.match(card.details, /ne vérifie pas ta prononciation/);
         continue;
       }
-      assert.match(
-        card.details,
-        /Accent tonique : .*\*\*[\p{Script=Cyrillic}]+\*\*/u,
-      );
+      if (element.id === "02-mot-ne") {
+        assert.match(card.details, /généralement sans accent propre/);
+        assert.doesNotMatch(card.details, /\*\*не\*\*/);
+      } else {
+        assert.match(
+          card.details,
+          /Accent tonique : .*\*\*[\p{Script=Cyrillic}]+\*\*/u,
+        );
+      }
       assert.match(card.details, /syllabe|2e de мене ; 1re de звати/);
       assert.match(card.details, /Repère français approximatif/);
       const syllables = card.details
@@ -179,6 +269,84 @@ test("fronts use ordinary spelling while stress and approximate reading remain o
       }
     }
   }
+});
+
+test("module 02 production cues distinguish subjects, politeness, gender, number and negation", () => {
+  assert.match(getReviewCard("02-mot-ya-production")!.cue, /pronom sujet/);
+  assert.match(getReviewCard("02-mot-ty-production")!.cue, /tutoies/);
+  assert.match(getReviewCard("02-mot-vy-production")!.cue, /vouvoies/);
+  assert.match(
+    getReviewCard("02-mot-vy-comprehension")!.answer,
+    /plusieurs personnes, ou une seule par politesse/,
+  );
+  for (const family of ["student", "inzhener"]) {
+    assert.match(getReviewCard(`02-mot-${family}-production`)!.cue, /un homme/);
+    assert.match(
+      getReviewCard(`02-mot-${family}ka-production`)!.cue,
+      /une femme/,
+    );
+    assert.match(
+      getReviewCard(`02-mot-${family}y-production`)!.cue,
+      /groupe masculin ou mixte/,
+    );
+  }
+  assert.match(
+    getReviewCard("02-mot-ne-production")!.cue,
+    /devant le nom.*pas la réponse « non »/,
+  );
+  assert.match(
+    getReviewCard("02-mot-tse-comprehension")!.details,
+    /Ce n’est pas le verbe « être »/,
+  );
+});
+
+test("module 02 listening material has separate groups and links to introduced course examples", () => {
+  const oldGroupIds = ["words", "expressions", "presentation"];
+  for (const id of oldGroupIds) {
+    const group = audioGroups.find((entry) => entry.id === id)!;
+    assert.ok(group);
+    assert.ok(group.segments.every((segment) => segment.id.startsWith("01-")));
+  }
+  const words = audioGroups.find((group) => group.id === "02-words")!.segments;
+  assert.deepEqual(
+    words.map((segment) => segment.id),
+    module02Elements
+      .filter((element) => element.kind !== "letter")
+      .map((element) => element.id),
+  );
+  const phrases = audioGroups.find(
+    (group) => group.id === "02-phrases",
+  )!.segments;
+  assert.equal(phrases.length, 12);
+  for (const segment of [...words, ...phrases]) {
+    assert.equal(findAudioSegment(segment.text), segment);
+    assert.equal(
+      findAudioSegment(` ${segment.text.toLocaleLowerCase("uk")} `),
+      segment,
+    );
+    assert.ok(segment.french.trim());
+    const match = /^\/parcours\/02\/(cours|vocabulaire)#([a-z-]+)$/.exec(
+      segment.sourceHref,
+    );
+    assert.ok(match, segment.sourceHref);
+    assert.ok(
+      section(
+        match[1] === "cours" ? module02Course : module02Vocabulary,
+        match[2]!,
+      ).includes(segment.text),
+      `${segment.text} is absent from ${segment.sourceHref}`,
+    );
+    if (segment.source.kind === "segment") {
+      assert.equal(segment.source.segmentId, segment.id);
+      assert.ok(presentationSegments.includes(segment));
+    } else {
+      assert.equal(segment.source.kind, "reference");
+    }
+  }
+  assert.equal(findAudioSegment("Це кава.")?.id, "02-identifier-cafe");
+  assert.equal(findAudioSegment("Це кава?"), undefined);
+  assert.equal(findAudioSegment("Ти студент?")?.id, "02-question-etudiant");
+  assert.equal(findAudioSegment("Ти студент."), undefined);
 });
 
 test("ambiguous meanings and registers have explicit contexts before answering", () => {

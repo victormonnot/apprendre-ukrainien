@@ -42,6 +42,7 @@ test("opens the module and moves between its three connected documents", async (
   await page.goto("/");
   await expect(page).toHaveURL("/parcours");
   await page
+    .locator('[aria-labelledby="module-01"]')
     .getByRole("link", { name: "Ouvrir le cours", exact: true })
     .click();
   await expect(page).toHaveURL(documentPath("cours"));
@@ -65,12 +66,63 @@ test("opens the module and moves between its three connected documents", async (
   }
 });
 
+test("opens the next module and keeps vocabulary and exercise navigation in that module", async ({
+  page,
+}) => {
+  await page.goto("/parcours");
+  await expect(
+    page.getByText("2 modules disponibles", { exact: true }),
+  ).toBeVisible();
+  await page
+    .locator('[aria-labelledby="module-02"]')
+    .getByRole("link", { name: "Ouvrir le cours", exact: true })
+    .click();
+  await expect(page).toHaveURL("/parcours/02/cours");
+  const mainNavigation = page.getByRole("navigation", {
+    name: "Navigation principale",
+    exact: true,
+  });
+  for (const document of documents.slice(1)) {
+    await expect(
+      mainNavigation.getByRole("link", { name: document.label, exact: true }),
+    ).toHaveAttribute("href", `/parcours/02/${document.slug}`);
+    await mainNavigation
+      .getByRole("link", { name: document.label, exact: true })
+      .click();
+    await expect(page).toHaveURL(`/parcours/02/${document.slug}`);
+  }
+  await page
+    .getByRole("navigation", { name: "Passer à un autre module", exact: true })
+    .getByRole("link")
+    .click();
+  await expect(page).toHaveURL("/parcours/01/exercices");
+  await page
+    .getByRole("navigation", { name: "Passer à un autre module", exact: true })
+    .getByRole("link")
+    .click();
+  await expect(page).toHaveURL("/parcours/02/exercices");
+
+  for (const document of documents.slice(1)) {
+    await page.goto(`/parcours?view=${document.slug}`);
+    const action =
+      document.slug === "vocabulaire"
+        ? "Ouvrir le vocabulaire"
+        : "Ouvrir les exercices";
+    await page
+      .locator('[aria-labelledby="module-02"]')
+      .getByRole("link", { name: action, exact: true })
+      .click();
+    await expect(page).toHaveURL(`/parcours/02/${document.slug}`);
+  }
+});
+
 test("contents links address unique, stable headings in every document", async ({
   page,
 }) => {
   for (const document of documents) {
     await page.goto(documentPath(document.slug));
     const headings = page.locator("article.prose h2, article.prose h3[id]");
+    await expect(headings.first()).toBeVisible();
     const ids = await headings.evaluateAll((elements) =>
       elements.map((element) => element.id),
     );
@@ -157,7 +209,9 @@ test("keeps the catalogue and long documents within the mobile viewport", async 
 
   for (const path of [
     "/parcours",
-    ...documents.map((document) => documentPath(document.slug)),
+    ...["01", "02"].flatMap((moduleId) =>
+      documents.map((document) => `/parcours/${moduleId}/${document.slug}`),
+    ),
   ]) {
     await page.goto(path);
     const dimensions = await page.evaluate(() => ({

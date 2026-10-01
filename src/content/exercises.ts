@@ -3,6 +3,7 @@ import type {
   ExerciseField,
   ExerciseItem,
 } from "../lib/exercise-types.ts";
+import { module02Exercises } from "./module02-exercises.ts";
 
 const field = (
   id: string,
@@ -35,7 +36,7 @@ const definition = (
   items,
 });
 
-export const exercises: ExerciseDefinition[] = [
+const module01Exercises: ExerciseDefinition[] = [
   definition(
     1,
     "Associer une lettre et son son",
@@ -305,6 +306,11 @@ export const exercises: ExerciseDefinition[] = [
       ),
     ],
   ),
+];
+
+export const exercises: ExerciseDefinition[] = [
+  ...module01Exercises,
+  ...module02Exercises,
 ];
 
 export function getExercise(id: string) {
