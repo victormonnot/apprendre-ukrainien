@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "./fixtures";
+import { expect, test, type Locator, type Page } from "./fixtures";
 import { cafeScenes } from "../src/content/scenes";
 import { describeAudio } from "../src/lib/server/audio-provider";
 import { openAudioStore } from "../src/lib/server/audio-store";
@@ -72,30 +72,32 @@ function watchSources(page: Page) {
   return sources;
 }
 
+async function fixedVoiceSettings(audio: Locator) {
+  await audio.getByRole("button", { name: "Vitesse", exact: true }).click();
+  await expect(
+    audio.getByRole("button", { name: "Lecture ralentie" }),
+  ).toBeVisible();
+  await expect(audio.getByLabel("Voix", { exact: true })).toHaveCount(0);
+}
+
 test.describe("guided scene audio", () => {
   test.beforeAll(seedSceneAudio);
 
-  test("conversation follows the selection, pauses and keeps voice and speed between lines", async ({
+  test("conversation follows the selection, pauses and alternates character voices at the chosen speed", async ({
     page,
     isMobile,
   }) => {
     const sources = watchSources(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("ukrainian-audio-voice", "openai-cedar");
+    });
     await page.goto("/cafe");
     await expect(player(page)).toHaveAttribute("data-audio-phase", "idle");
     expect(sources).toHaveLength(0);
     await page.locator('[data-scene-line="anna-thanks"]').click();
     await expect(player(page)).toHaveAttribute("data-audio-text", "Дякую!");
     expect(sources).toHaveLength(0);
-    await player(page)
-      .getByRole("button", { name: "Vitesse et voix", exact: true })
-      .click();
-    await player(page)
-      .getByLabel("Voix", { exact: true })
-      .selectOption("openai-nova");
-    await expect(player(page).getByLabel("Voix", { exact: true })).toBeHidden();
-    await player(page)
-      .getByRole("button", { name: "Vitesse et voix", exact: true })
-      .click();
+    await fixedVoiceSettings(player(page));
     await player(page)
       .getByRole("button", { name: "Lecture ralentie" })
       .click();
@@ -134,17 +136,20 @@ test.describe("guided scene audio", () => {
       "anna-goodbye",
       "maxime-goodbye",
     ]);
-    expect(sources.every((source) => source.voiceId === "openai-nova")).toBe(
-      true,
-    );
-    await expect(listen(page)).toHaveAttribute("data-scene-following", "false");
-    await player(page)
-      .getByRole("button", { name: "Vitesse et voix", exact: true })
-      .click();
-    await expect(player(page).getByLabel("Voix", { exact: true })).toHaveValue(
+    expect(sources.map((source) => source.voiceId)).toEqual([
       "openai-nova",
-    );
-    await player(page).getByLabel("Voix", { exact: true }).press("Escape");
+      "openai-cedar",
+      "openai-nova",
+      "openai-cedar",
+    ]);
+    await expect(listen(page)).toHaveAttribute("data-scene-following", "false");
+    await fixedVoiceSettings(player(page));
+    await expect(
+      player(page).getByRole("button", { name: "Lecture ralentie" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await player(page)
+      .getByRole("button", { name: "Lecture ralentie" })
+      .press("Escape");
     await page.locator('[data-scene-line="anna-thanks"]').click();
     await player(page)
       .getByRole("button", { name: "Écouter « Дякую! »", exact: true })
@@ -153,6 +158,10 @@ test.describe("guided scene audio", () => {
     expect(await player(page).locator("audio").getAttribute("src")).toBe(file);
     await expect(player(page)).toHaveAttribute("data-audio-phase", "finished");
     expect(sources).toHaveLength(5);
+    expect(sources.at(-1)?.voiceId).toBe("openai-nova");
+    expect(
+      await page.evaluate(() => localStorage.getItem("ukrainian-audio-voice")),
+    ).toBe("openai-cedar");
     if (isMobile) {
       await page.setViewportSize({ width: 320, height: 800 });
       expect(
@@ -161,6 +170,246 @@ test.describe("guided scene audio", () => {
         ),
       ).toBe(true);
     }
+  });
+
+  test("the informal conversation starts with Maxime and ignores global voice changes during playback", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile,
+      "Character assignment and preference events are shared across viewports.",
+    );
+    const sources = watchSources(page);
+    await page.addInitScript(() => {
+      if (!localStorage.getItem("ukrainian-audio-voice"))
+        localStorage.setItem("ukrainian-audio-voice", "openai-nova");
+    });
+    await page.goto("/cafe");
+    await page
+      .getByLabel("Version de la scène", { exact: true })
+      .selectOption("retrouvailles");
+    await listen(page)
+      .getByRole("button", { name: "Écouter la conversation", exact: true })
+      .click();
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "playing");
+    expect(sources.map(({ lineId, voiceId }) => ({ lineId, voiceId }))).toEqual(
+      [{ lineId: "maxime-greeting", voiceId: "openai-cedar" }],
+    );
+    const maximeFile = await player(page).locator("audio").getAttribute("src");
+    // A preference notification in this document must not interrupt a character.
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("ukrainian-audio-voice-changed", {
+          detail: "openai-nova",
+        }),
+      );
+    });
+    await expect(listen(page)).toHaveAttribute("data-scene-following", "true");
+    await expect(
+      page.locator('[data-scene-line="anna-greeting"]'),
+    ).toHaveAttribute("aria-current", "true");
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "playing");
+    expect(await player(page).locator("audio").getAttribute("src")).not.toBe(
+      maximeFile,
+    );
+    // Simulate another document changing the preference without backgrounding this page.
+    await page.evaluate(() => {
+      localStorage.setItem("ukrainian-audio-voice", "openai-cedar");
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "ukrainian-audio-voice",
+          oldValue: "openai-nova",
+          newValue: "openai-cedar",
+          storageArea: localStorage,
+        }),
+      );
+    });
+    await expect(listen(page)).toHaveAttribute("data-scene-following", "true");
+    await expect(listen(page)).toContainText("Conversation terminée", {
+      timeout: 20_000,
+    });
+    expect(
+      sources.map(({ variantId, lineId, voiceId }) => ({
+        variantId,
+        lineId,
+        voiceId,
+      })),
+    ).toEqual([
+      {
+        variantId: "retrouvailles",
+        lineId: "maxime-greeting",
+        voiceId: "openai-cedar",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "anna-greeting",
+        voiceId: "openai-nova",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "maxime-introduction",
+        voiceId: "openai-cedar",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "anna-introduction",
+        voiceId: "openai-nova",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "maxime-thanks",
+        voiceId: "openai-cedar",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "anna-welcome",
+        voiceId: "openai-nova",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "maxime-goodbye",
+        voiceId: "openai-cedar",
+      },
+      {
+        variantId: "retrouvailles",
+        lineId: "anna-goodbye",
+        voiceId: "openai-nova",
+      },
+    ]);
+    expect(
+      await page.evaluate(() => localStorage.getItem("ukrainian-audio-voice")),
+    ).toBe("openai-cedar");
+    await page.goto("/studio?element=01-presentation-anna");
+    const ordinary = page.locator(
+      '[data-audio-player][data-audio-text="Мене звати Анна."]',
+    );
+    await ordinary
+      .getByRole("button", { name: "Vitesse et voix", exact: true })
+      .click();
+    await expect(ordinary.getByLabel("Voix", { exact: true })).toHaveValue(
+      "openai-cedar",
+    );
+  });
+
+  test("identical greetings keep distinct character recordings in observation and role models", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile,
+      "Recording identity and role models are shared across viewports.",
+    );
+    const sources = watchSources(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("ukrainian-audio-voice", "openai-nova");
+    });
+    await page.goto("/cafe");
+    const files = new Map<string, string>();
+    for (const role of ["anna", "maxime"]) {
+      await page.locator(`[data-scene-line="${role}-greeting"]`).click();
+      await player(page)
+        .getByRole("button", { name: "Écouter « Добрий день! »", exact: true })
+        .click();
+      await expect(player(page)).toHaveAttribute(
+        "data-audio-phase",
+        "finished",
+      );
+      const file = await player(page).locator("audio").getAttribute("src");
+      expect(file).toBeTruthy();
+      files.set(role, file!);
+    }
+    expect(files.get("anna")).not.toBe(files.get("maxime"));
+    expect(sources.map((source) => source.voiceId)).toEqual([
+      "openai-nova",
+      "openai-cedar",
+    ]);
+    await page
+      .getByRole("button", { name: "Prendre un rôle", exact: true })
+      .click();
+    const practice = page.locator(".cafe-practice");
+    const roleSelector = practice.getByLabel("Mon personnage", { exact: true });
+    for (const role of ["maxime", "anna"]) {
+      await expect(roleSelector).toBeEnabled();
+      await roleSelector.selectOption(role);
+      const line = practice
+        .locator(".cafe-your-turn")
+        .filter({ has: page.locator(`#answer-${role}-greeting`) });
+      await line
+        .getByRole("button", { name: "Voir le modèle", exact: true })
+        .click();
+      const model = line.locator("[data-audio-player]");
+      await fixedVoiceSettings(model);
+      await model
+        .getByRole("button", { name: "Lecture ralentie" })
+        .press("Escape");
+      await model
+        .getByRole("button", { name: "Écouter « Добрий день! »", exact: true })
+        .click();
+      await expect(model).toHaveAttribute("data-audio-phase", "finished");
+      expect(await model.locator("audio").getAttribute("src")).toBe(
+        files.get(role),
+      );
+      const requestCount = sources.length;
+      await model
+        .getByRole("button", {
+          name: "Réécouter « Добрий день! »",
+          exact: true,
+        })
+        .click();
+      await expect(model).toHaveAttribute("data-audio-phase", "playing");
+      expect(await model.locator("audio").getAttribute("src")).toBe(
+        files.get(role),
+      );
+      await expect(model).toHaveAttribute("data-audio-phase", "finished");
+      expect(sources).toHaveLength(requestCount);
+    }
+    expect(sources.map((source) => source.voiceId)).toEqual([
+      "openai-nova",
+      "openai-cedar",
+      "openai-cedar",
+      "openai-nova",
+    ]);
+    expect(
+      await page.evaluate(() => localStorage.getItem("ukrainian-audio-voice")),
+    ).toBe("openai-nova");
+  });
+
+  test("repetition reuses Anna's recording through every cycle and replay", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "Repeat cycles are shared across viewports.");
+    const sources = watchSources(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("ukrainian-audio-voice", "openai-cedar");
+    });
+    await page.goto("/cafe");
+    await listen(page)
+      .getByRole("button", { name: "Répéter cette réplique", exact: true })
+      .click();
+    await listen(page).getByLabel("Silence pour répéter").selectOption("2");
+    await player(page)
+      .getByRole("button", { name: "Écouter « Добрий день! »", exact: true })
+      .click();
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "playing");
+    const file = await player(page).locator("audio").getAttribute("src");
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "gap");
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "finished", {
+      timeout: 12_000,
+    });
+    await expect(player(page).getByRole("status")).toContainText("Écoute 3/3");
+    expect(sources.map((source) => source.voiceId)).toEqual(["openai-nova"]);
+    expect(await player(page).locator("audio").getAttribute("src")).toBe(file);
+    await player(page)
+      .getByRole("button", { name: "Réécouter « Добрий день! »", exact: true })
+      .click();
+    await expect(player(page)).toHaveAttribute("data-audio-phase", "playing");
+    expect(await player(page).locator("audio").getAttribute("src")).toBe(file);
+    expect(sources).toHaveLength(1);
+    expect(
+      await page.evaluate(() => localStorage.getItem("ukrainian-audio-voice")),
+    ).toBe("openai-cedar");
   });
 
   test("changing the selected line cancels a delayed audio response and the queue", async ({
@@ -261,6 +510,11 @@ test.describe("guided scene audio", () => {
       "anna-thanks",
       "maxime-welcome",
       "maxime-welcome",
+    ]);
+    expect(sources.map((source) => source.voiceId)).toEqual([
+      "openai-nova",
+      "openai-cedar",
+      "openai-cedar",
     ]);
   });
 

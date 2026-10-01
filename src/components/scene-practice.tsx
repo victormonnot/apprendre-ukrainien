@@ -11,6 +11,7 @@ import {
 } from "react";
 import Markdown from "react-markdown";
 import { AudioPlayer } from "@/components/audio-player";
+import { sceneVoiceIds } from "@/lib/scene-voices";
 import { loadSceneWorkspace, updateScene } from "@/lib/scene-client";
 import {
   SCENE_ANSWER_MAX_LENGTH,
@@ -498,6 +499,7 @@ export function ScenePractice({
                           </Markdown>
                           <AudioPlayer
                             compact
+                            fixedVoiceId={sceneVoiceIds[line.speakerId]}
                             text={line.ukrainian}
                             source={{
                               kind: "scene",

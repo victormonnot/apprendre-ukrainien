@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { SceneDefinition } from "@/lib/scene-types";
+import { sceneVoiceIds } from "@/lib/scene-voices";
 import {
   AudioPlayer,
   type AudioPhase,
@@ -104,8 +105,7 @@ export function SceneListening({
     >
       <h3 id={`${id}-title`}>Écouter la scène</h3>
       <p className="scene-listening-note">
-        Une même voix de synthèse lit les deux personnages. Les noms indiquent
-        qui parle ; la voix ne cherche pas à imiter Anna ou Maxime.
+        Anna : voix féminine · Maxime : voix masculine. Voix de synthèse.
       </p>
       <div
         className="scene-listening-modes"
@@ -192,6 +192,7 @@ export function SceneListening({
         </div>
       )}
       <AudioPlayer
+        fixedVoiceId={sceneVoiceIds[line.speakerId]}
         source={{
           kind: "scene",
           sceneId: scene.id,

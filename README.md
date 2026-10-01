@@ -256,9 +256,10 @@ changer de passage ou quitter la page arrête l’ancienne lecture. Masquer l’
 la met en pause. Aucun audio ne démarre à l’ouverture d’une page.
 
 Le choix de voix est mémorisé dans le navigateur et partagé avec les lecteurs
-déjà ouverts, y compris dans les autres onglets de la même application. Changer
-de voix arrête la lecture en cours ; une nouvelle écoute reste un choix explicite.
-Les enregistrements précédents restent conservés.
+déjà ouverts, y compris dans les autres onglets de la même application, sauf
+au café où chaque personnage garde sa propre voix. Changer de voix arrête la
+lecture des lecteurs qui suivent cette préférence ; une nouvelle écoute reste
+un choix explicite. Les enregistrements précédents restent conservés.
 
 **Studio d’écoute** propose les mots et formules du module, puis trois extraits
 pour se présenter. Choisir entre :
@@ -308,11 +309,16 @@ demande. Ces dialogues sont du contenu de référence préparé, sans improvisat
 par un modèle.
 
 **Écouter la conversation** enchaîne les répliques à partir de celle qui est
-sélectionnée. Le lecteur commun conserve la voix et la vitesse entre les
-répliques ; il permet aussi de réécouter uniquement une phrase ou de la répéter
-avec des silences. La pause suspend la lecture, et changer de version, d’activité
-ou de réplique manuellement arrête l’enchaînement. Une même voix synthétique lit
-les deux personnages. Aucune lecture ne démarre à l’ouverture de la scène.
+sélectionnée. Anna utilise la voix féminine **Nova**, Maxime la voix masculine
+**Cedar**, dans les deux versions de la scène. La voix suit le personnage lors
+de l’enchaînement, des réécoutes, des répétitions avec silences et de l’écoute
+des modèles dans **Prendre un rôle**. Ces deux voix sont des synthèses.
+
+Le lecteur conserve la vitesse entre les répliques. Au café, son menu règle la
+vitesse ; la voix du personnage reste fixe, indépendamment de la préférence
+choisie ailleurs dans l’application. La pause suspend la lecture, et changer de
+version, d’activité ou de réplique manuellement arrête l’enchaînement.
+Aucune lecture ne démarre à l’ouverture de la scène.
 
 Depuis une réplique, **Enregistrer l’expression** la retrouve dans l’atelier.
 **Ajouter aux révisions** active séparément ses cartes existantes, sans doublon

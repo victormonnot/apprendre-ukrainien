@@ -43,6 +43,7 @@ export type AudioPlayerController = {
 type Props = {
   source: AudioSource;
   text: string;
+  fixedVoiceId?: AudioVoiceId;
   compact?: boolean;
   mode?: AudioMode;
   repetitions?: number;
@@ -70,6 +71,7 @@ export function AudioPlayer(props: Props) {
   // Changing the excerpt or exercise settings ends the previous listening session.
   const session = JSON.stringify([
     props.source,
+    props.fixedVoiceId,
     props.mode,
     props.repetitions,
     props.gapSeconds,
@@ -84,6 +86,7 @@ export function AudioPlayer(props: Props) {
 function AudioPlayerSession({
   source,
   text,
+  fixedVoiceId,
   compact = false,
   mode = "listen",
   repetitions = 3,
@@ -103,8 +106,10 @@ function AudioPlayerSession({
   const speedButtonRef = useRef<HTMLButtonElement>(null);
   const [voiceMenuOpen, setVoiceMenuOpen] = useState(false);
   const [catalogue, setCatalogue] = useState<AudioCatalogue | null>(null);
-  const [voiceId, setVoiceId] = useState<AudioVoiceId | null>(null);
-  const voiceRef = useRef<AudioVoiceId | null>(null);
+  const [voiceId, setVoiceId] = useState<AudioVoiceId | null>(
+    fixedVoiceId ?? null,
+  );
+  const voiceRef = useRef<AudioVoiceId | null>(fixedVoiceId ?? null);
   const clipRef = useRef<AudioClip | null>(null);
   const [phase, setPhase] = useState<AudioPhase>("idle");
   const phaseRef = useRef<AudioPhase>("idle");
@@ -194,19 +199,18 @@ function AudioPlayerSession({
     callbacks.current.onInterrupt?.();
   }, [clearTimer, gapSeconds, id, transition]);
 
-  useEffect(
-    () =>
-      subscribeAudioVoicePreference((selected) => {
-        const next = selected ?? catalogue?.defaultVoiceId ?? null;
-        if (next === voiceRef.current) return;
-        stop();
-        voiceRef.current = next;
-        setVoiceId(next);
-        clipRef.current = null;
-        setError(null);
-      }),
-    [catalogue, stop],
-  );
+  useEffect(() => {
+    if (fixedVoiceId) return;
+    return subscribeAudioVoicePreference((selected) => {
+      const next = selected ?? catalogue?.defaultVoiceId ?? null;
+      if (next === voiceRef.current) return;
+      stop();
+      voiceRef.current = next;
+      setVoiceId(next);
+      clipRef.current = null;
+      setError(null);
+    });
+  }, [catalogue, fixedVoiceId, stop]);
 
   useEffect(() => {
     mounted.current = true;
@@ -238,7 +242,7 @@ function AudioPlayerSession({
         if (cancelled) return;
         setCatalogue(value);
         if (!voiceRef.current) {
-          const choice = preferredVoice(value);
+          const choice = fixedVoiceId ?? preferredVoice(value);
           voiceRef.current = choice;
           setVoiceId(choice);
         }
@@ -254,7 +258,7 @@ function AudioPlayerSession({
     return () => {
       cancelled = true;
     };
-  }, [catalogueRequested]);
+  }, [catalogueRequested, fixedVoiceId]);
 
   const playFile = async (token: number, restart: boolean) => {
     const audio = audioRef.current;
@@ -320,7 +324,8 @@ function AudioPlayerSession({
         const available = catalogue ?? (await loadAudioCatalogue());
         if (!mounted.current || token !== operation.current) return;
         setCatalogue(available);
-        const selected = voiceRef.current ?? preferredVoice(available);
+        const selected =
+          fixedVoiceId ?? voiceRef.current ?? preferredVoice(available);
         if (!selected)
           throw new Error(
             "Aucune voix n’est disponible. Ouvre le choix de voix pour actualiser.",
@@ -377,7 +382,10 @@ function AudioPlayerSession({
       const available = await loadAudioCatalogue(true);
       if (!mounted.current) return;
       setCatalogue(available);
-      if (!available.voices.some((voice) => voice.id === voiceRef.current)) {
+      if (
+        !fixedVoiceId &&
+        !available.voices.some((voice) => voice.id === voiceRef.current)
+      ) {
         stop();
         const selected = preferredVoice(available);
         voiceRef.current = selected;
@@ -519,8 +527,8 @@ function AudioPlayerSession({
           ref={voiceButtonRef}
           type="button"
           className="audio-icon-button audio-voice-button"
-          aria-label="Vitesse et voix"
-          title="Vitesse et voix"
+          aria-label={fixedVoiceId ? "Vitesse" : "Vitesse et voix"}
+          title={fixedVoiceId ? "Vitesse" : "Vitesse et voix"}
           popoverTarget={`${id}-voices`}
           aria-expanded={voiceMenuOpen}
           onClick={() => {
@@ -560,29 +568,33 @@ function AudioPlayerSession({
         >
           Vitesse · {rate === 1 ? "1×" : "0,75×"}
         </button>
-        <label htmlFor={`${id}-voice`}>Voix</label>
-        <select
-          id={`${id}-voice`}
-          value={voiceId ?? ""}
-          onChange={(event) => {
-            claim();
-            saveAudioVoicePreference(event.target.value as AudioVoiceId);
-            voiceMenuRef.current?.hidePopover();
-            voiceButtonRef.current?.focus({ preventScroll: true });
-          }}
-          disabled={!catalogue?.voices.length}
-        >
-          {!voiceId && (
-            <option value="">
-              {catalogue ? "Indisponible" : "Chargement…"}
-            </option>
-          )}
-          {catalogue?.voices.map((item) => (
-            <option value={item.id} key={item.id}>
-              {item.label}
-            </option>
-          ))}
-        </select>
+        {!fixedVoiceId && (
+          <>
+            <label htmlFor={`${id}-voice`}>Voix</label>
+            <select
+              id={`${id}-voice`}
+              value={voiceId ?? ""}
+              onChange={(event) => {
+                claim();
+                saveAudioVoicePreference(event.target.value as AudioVoiceId);
+                voiceMenuRef.current?.hidePopover();
+                voiceButtonRef.current?.focus({ preventScroll: true });
+              }}
+              disabled={!catalogue?.voices.length}
+            >
+              {!voiceId && (
+                <option value="">
+                  {catalogue ? "Indisponible" : "Chargement…"}
+                </option>
+              )}
+              {catalogue?.voices.map((item) => (
+                <option value={item.id} key={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         {phase !== "idle" && phase !== "finished" && (
           <button
             type="button"
