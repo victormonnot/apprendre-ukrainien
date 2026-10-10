@@ -1,105 +1,123 @@
-# Déploiement sur un VPS
+# Deployment
 
-Cette configuration lance un serveur Next.js avec Node 24, SQLite et Caddy. Le mode `private` conserve l’accès HTTP à un profil personnel. Le mode `accounts` rend les pages publiques et réserve les données aux sessions des comptes. Le port de l’application reste accessible uniquement sur le réseau Docker. Le même `APP_ACCESS_MODE` est transmis à la passerelle et à l’application ; `private` reste le défaut.
+This guide describes a single-server deployment of the prototype using Next.js, Node 24, SQLite and Caddy. The app is still in development before V1. This guide covers access, persistence and updates. See the [project overview](../README.md) for scope and the [development guide](../docs/development.md) for local setup and checks.
 
-Choisir la configuration Coolify ci-dessous ou l’installation autonome des sections suivantes. Dans Coolify, son proxy gère HTTPS ; en installation autonome, Caddy gère aussi le certificat.
+The supplied configurations keep the application port inside Docker and pass the same `APP_ACCESS_MODE` to the gateway and application:
 
-## Avec Coolify
+| Mode                | Public access                            | Personal data                                                   |
+| ------------------- | ---------------------------------------- | --------------------------------------------------------------- |
+| `private` (default) | HTTP Basic Auth protects the whole site. | One existing personal workspace.                                |
+| `accounts`          | Course pages are public.                 | An application session is required for each personal workspace. |
 
-Utiliser une application **Docker Compose depuis le dépôt Git**, avec **Base Directory** `/` et **Docker Compose Location** `/deploy/compose.coolify.yaml`. Laisser **Raw Compose Deployment**, **Connect To Predefined Network** et les prévisualisations désactivés. Le fichier réutilise le Dockerfile du dépôt et embarque la configuration Caddy avec `configs.content` ; Docker Compose 2.23.1 ou plus récent est nécessaire. Aucun montage du dépôt ni deuxième proxy public n’est nécessaire.
+Choose either Coolify or standalone Compose. Coolify's proxy handles HTTPS in the first option; Caddy handles HTTPS and certificates in the second. Both use one application instance and one persistent data volume.
 
-Coolify fixe le répertoire de projet à la racine du dépôt. Pour valider cette variante en local avec les valeurs de `deploy/.env`, reproduire ce réglage depuis la racine : `docker compose --project-directory . --env-file deploy/.env -f deploy/compose.coolify.yaml config --quiet`.
+## Coolify
 
-Dans **Domains for gateway**, saisir uniquement l’URL HTTPS du site, par exemple `https://ukrainien.example.com`, et garder **Force Https** activé. Laisser **Domains for app** vide, en retirant tout domaine généré. Le proxy Coolify termine HTTPS et transmet à `gateway:80`, qui authentifie la requête avant de joindre `app:3000`. Aucun `ports:` ne doit être ajouté à ces services. Cette configuration remplace le lancement du `compose.yaml` autonome.
+Create a **Docker Compose application from a Git repository** with **Base Directory** `/` and **Docker Compose Location** `/deploy/compose.coolify.yaml`. Keep Raw Compose deployment, connection to a predefined network and preview deployments disabled. The file uses the repository's Dockerfile and embeds Caddy's configuration through `configs.content`, which requires Docker Compose 2.23.1 or later. No repository bind mount or second public proxy is needed. See [Coolify's Compose setup](https://coolify.io/docs/applications/builds/docker-compose) and [Docker's config reference](https://docs.docker.com/reference/compose-file/configs/).
 
-Dans **Environment Variables**, renseigner les valeurs suivantes en activant **Runtime Variable** et en désactivant **Build Variable**. Désactiver également **Inject Build Args to Dockerfile** ; aucun secret n’est nécessaire à la construction.
+Coolify uses the repository root as its project directory. To validate this variant locally with values from `deploy/.env`, run from the repository root:
 
-En mode `private`, les quatre variables d’accès `APP_HOST`, `APP_LOGIN`, `APP_PASSWORD_HASH` et `APP_PROXY_SECRET` sont obligatoires au démarrage. Pendant le build, Compose peut annoncer qu’elles sont absentes et les remplacer par des valeurs vides : les services ne démarrent pas à cette étape. Une configuration d’accès restée vide au démarrage ne donne aucun accès au site.
+```sh
+docker compose --project-directory . --env-file deploy/.env -f deploy/compose.coolify.yaml config --quiet
+```
 
-| Variable            | Valeur                                                                                                                                                     |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_HOST`          | Le nom d’hôte du domaine choisi, sans `https://`, chemin ni slash final.                                                                                   |
-| `APP_ACCESS_MODE`   | `private` pour l’accès HTTP personnel, `accounts` pour les pages publiques et les comptes séparés.                                                         |
-| `APP_LOGIN`         | L’identifiant personnel, sans espace.                                                                                                                      |
-| `APP_PASSWORD_HASH` | Le hash bcrypt généré avec la commande Caddy de la section suivante. En vue **Normal**, coller le hash seul et activer **Literal** pour préserver les `$`. |
-| `APP_PROXY_SECRET`  | Le résultat de `openssl rand -hex 32`, identique pour l’application et la passerelle.                                                                      |
-| `OPENAI_API_KEY`    | Facultatif ; laisser vide pour utiliser les fonctions locales.                                                                                             |
-| `OPENAI_MODEL`      | Facultatif ; `gpt-6-luna` par défaut.                                                                                                                      |
+Assign only the HTTPS site URL, such as `https://ukrainien.example.com`, to the **gateway** service in Domains. Keep HTTPS redirection enabled. Leave **app** without a domain, removing any generated domain. Coolify terminates HTTPS and forwards to `gateway:80`, which applies the selected access mode before forwarding to `app:3000`. Do not add `ports:` to either service. Use this configuration instead of running the standalone `compose.yaml`.
 
-Les variables restent dans Coolify, jamais dans Git. `deploy/.env.example` décrit les mêmes valeurs pour une validation locale, mais aucun fichier `.env` n’est nécessaire dans le dépôt déployé. La passerelle conserve Host et Origin, remplace `X-App-Proxy-Secret`, retire Authorization, limite les imports à 256 Mio et interdit la mise en cache partagée et l’affichage en iframe.
+Set the following **Environment Variables** to runtime only: available in the container, unavailable during build. Disable automatic build-argument injection, called **Inject Build Args to Dockerfile** in older interfaces; current interfaces offer **Advanced > Build > Build arguments > Managed manually in Dockerfile**. This image needs no build secrets. See [Coolify's variable settings](https://coolify.io/docs/applications/configuration/environment-variables).
 
-Déployer puis vérifier que HTTP redirige vers HTTPS, qu’une visite HTTPS sans identifiants reçoit `401`, et qu’une connexion permet d’ouvrir **Mes données**. Le stockage `app_data`, monté sur `/app/.data`, appartient à cette ressource Coolify. Relever son nom Docker effectif dans **Persistent Storage** ou dans la configuration Compose générée : Coolify peut le préfixer. Conserver la même ressource et ce volume lors des redéploiements ; supprimer le stockage ou recréer la ressource avec un autre volume ne reprendrait pas les données.
+| Variable            | Value                                                                                                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_HOST`          | Required in both modes. Hostname only, without `https://`, a path or a trailing slash.                                                                                                   |
+| `APP_ACCESS_MODE`   | `private` for HTTP Basic Auth; `accounts` for public pages and separate accounts. Defaults to `private`.                                                                                 |
+| `APP_LOGIN`         | Required only in `private` mode. Personal login without spaces.                                                                                                                          |
+| `APP_PASSWORD_HASH` | Required only in `private` mode. Generate bcrypt with the Caddy command below. In **Normal** view, paste the hash alone and set interpolation to **Literal** to preserve `$` characters. |
+| `APP_PROXY_SECRET`  | Required in both modes. Output of `openssl rand -hex 32`, shared by the application and gateway.                                                                                         |
+| `OPENAI_API_KEY`    | Optional. Leave empty to use local features without provider calls.                                                                                                                      |
+| `OPENAI_MODEL`      | Optional model for written assistance. The configured default is `gpt-6-luna`.                                                                                                           |
 
-Avant chaque mise à jour, créer et télécharger une sauvegarde depuis **Mes données**, puis redéployer le commit choisi. Garder une seule instance `app` sur ce volume, sans déploiement parallèle ni Swarm ; Compose remplace le conteneur avec une interruption possible. Les sauvegardes hors VPS, la migration depuis le Mac et la compatibilité des migrations suivent les sections ci-dessous. Les audios déjà conservés restent lisibles.
+Compose may warn about missing runtime variables and substitute empty values during the build, when services are not started. Required access values must be present at runtime: an empty host or proxy secret prevents application access, and private mode also needs its Basic Auth credentials.
 
-## Préparer le serveur
+Keep these values in Coolify, never Git. `deploy/.env.example` documents the same variables for local validation; no `.env` file is needed in the deployed repository. The gateway preserves Host and Origin, replaces `X-App-Proxy-Secret`, removes Authorization, limits request bodies to 256 MiB and sets headers that prevent shared caching and framing.
 
-Installer Docker Engine et les plugins Docker Compose et Buildx sur un serveur Linux. Les ports TCP 80 et 443 doivent être disponibles et accessibles ; UDP 443 permet HTTP/3.
+After deploying, verify HTTP redirects to HTTPS and check the selected mode:
 
-Créer uniquement un enregistrement DNS pour le sous-domaine choisi, par exemple `ukrainien.example.com`, pointant vers l’adresse IPv4 du VPS. Ajouter un enregistrement AAAA seulement si IPv6 est également configuré. Les autres enregistrements du domaine restent inchangés.
+- **Private:** an HTTPS request without credentials returns `401`; after HTTP login, **Mes données** opens.
+- **Accounts:** courses open without credentials; personal APIs return `401` without an application session. Sign in as the provisioned owner and check **Mes données**. Follow [account activation](#enable-accounts-and-public-pages) before enabling this mode.
 
-Si le serveur héberge déjà des sites derrière Caddy ou un autre proxy, suivre la section « Plusieurs projets » avant de démarrer ces services.
+The `app_data` volume mounted at `/app/.data` belongs to this Coolify resource. Record its actual Docker name from **Persistent Storage** or the generated Compose configuration, because Coolify may prefix it. Retain the same resource and volume across deployments. Removing storage or creating a resource with a different volume does not carry the data over.
 
-## Activer les comptes et les pages publiques
+Before each update, create and download a backup from **Mes données**, then deploy the selected commit. Keep one `app` instance on this volume, without parallel deployments or Swarm. Container replacement may interrupt service. The backup, migration and schema compatibility guidance below also applies to Coolify. Previously saved audio remains playable.
 
-1. Télécharger une sauvegarde pédagogique fraîche et conserver le volume existant. Déployer le code avec `APP_ACCESS_MODE=private` le temps de préparer le propriétaire.
-2. Préparer **hors du dépôt**, dans un fichier de permissions `0600`, un objet JSON contenant `username`, `displayName` et `password` (12 à 128 caractères). Le pseudo ne contient que lettres ASCII, chiffres, point, tiret ou soulignement, sur 3 à 32 caractères.
-3. Créer explicitement le propriétaire depuis le conteneur de l’application. Le script lit les identifiants sur stdin et renvoie un code de récupération ; rediriger aussi cette sortie vers un fichier privé `0600`. Avec Compose autonome :
+## Prepare a standalone server
+
+Install Docker Engine with the Compose and Buildx plugins on a Linux server. TCP ports 80 and 443 must be available and reachable; UDP 443 enables HTTP/3.
+
+Create a DNS record for the chosen subdomain, such as `ukrainien.example.com`, pointing to the server's IPv4 address. Add an AAAA record only if IPv6 is configured too. Leave the domain's other records unchanged.
+
+If the server already hosts sites behind Caddy or another proxy, read [sharing a server](#several-projects-on-one-server) before starting these services.
+
+## Enable accounts and public pages
+
+1. Download a fresh learning-data backup and retain the existing volume. Deploy the code with `APP_ACCESS_MODE=private` while preparing the owner.
+2. Outside the repository, create a JSON file with permissions `0600` containing `username`, `displayName` and `password`. Passwords must have 12 to 128 characters. Usernames have 3 to 32 ASCII letters, digits, dots, hyphens or underscores, starting with a letter or digit.
+3. Explicitly provision the owner from the application container. The script reads credentials from stdin and returns a recovery code. Redirect that output to a private `0600` file too. For standalone Compose, replace the placeholder paths below with your private files:
 
    ```sh
    umask 077
    docker compose --env-file deploy/.env exec -T app node scripts/account.ts provision-owner < /chemin/prive/compte.json > /chemin/prive/recuperation.json
    ```
 
-   Avec Coolify, utiliser le conteneur **app** exact de cette application et la même commande `node /app/scripts/account.ts provision-owner`. Le script refuse de créer un second propriétaire. Les inscriptions publiques ne peuvent ni créer ce rôle ni reprendre la base historique. La création associe le propriétaire au répertoire existant sans déplacer ni réécrire ses données pédagogiques. Ne pas partager le fichier de récupération.
+   For Coolify, use this application's exact **app** container and the command `node /app/scripts/account.ts provision-owner`, with the same private stdin and output handling. The script refuses to create a second owner. Public registration cannot create an owner or claim the historical workspace. Provisioning associates the owner with the existing directory without moving or rewriting its learning data. Keep the recovery file private.
 
-4. Passer `APP_ACCESS_MODE` à `accounts` en runtime pour **app et passerelle**, puis recréer les services sur la version préparée. Les deux fichiers Compose fournis propagent une seule valeur. La fenêtre HTTP disparaît : le site propose `/connexion` et `/inscription`. Les comptes sont persistants sur le même volume. `APP_LOGIN` et `APP_PASSWORD_HASH` sont utilisés seulement en mode `private`.
-5. Vérifier que les cours répondent sans identifiants, que les API personnelles répondent `401` sans session, puis se connecter au compte propriétaire et retrouver ses données. Faire un essai avec un second compte vide avant de partager le site.
+4. Set `APP_ACCESS_MODE=accounts` at runtime for **both the application and gateway**. Stop `app` before recreating the gateway, then start `app` with the new mode; on Coolify, stop the resource before redeploying it. This avoids serving requests while the services have different modes. Both supplied Compose files propagate one value to both services. The HTTP password prompt is replaced by `/connexion` and `/inscription`; accounts persist on the same volume. `APP_LOGIN` and `APP_PASSWORD_HASH` are used only in `private` mode.
+5. Confirm courses are accessible without credentials and personal APIs return `401` without a session. Sign in as the owner and check the existing data. Test a second, empty account before sharing the site.
 
-En développement local, `APP_AUTH_ENABLED=1` permet de tester les comptes avec un **répertoire de données jetable** et un propriétaire provisionné avec `npm run account -- provision-owner`. Ne pas utiliser la base personnelle pour les essais.
+For local development, use `APP_AUTH_ENABLED=1`, a **disposable data directory** and an owner provisioned with `npm run account -- provision-owner`. Do not test against personal data. When set for accounts, `APP_DATA_DIR` must be an absolute path. See the [development guide](../docs/development.md) for local configuration.
 
-`APP_DATA_DIR`, lorsqu’il est défini pour les comptes, doit être un chemin absolu.
+Opaque session tokens are stored as hashes in `accounts.sqlite3`. Cookies are HttpOnly and SameSite=Lax, use Secure in the supplied HTTPS deployment, and expire after 30 days. Each member has an `accounts/<id>/` directory for its database, audio and backups; the owner retains the original data directory. Learning-data imports and exports exclude identities and sessions, so a restore does not change the account. Recovery codes replace email password resets. Using a code rotates it and revokes old sessions.
 
-Les sessions opaques sont stockées sous forme d’empreintes dans `accounts.sqlite3` ; cookie HttpOnly, SameSite et Secure en HTTPS, expiration après 30 jours. Chaque membre a un répertoire `accounts/<id>/` contenant sa base, ses sons et ses sauvegardes. Le registre des identités et sessions reste hors des imports/exports pédagogiques : restaurer une sauvegarde ne change pas le compte. En cas de mot de passe oublié, le code de récupération fourni à l’inscription remplace un e-mail de réinitialisation. Un code utilisé est remplacé et les anciennes sessions sont révoquées.
+AI generation is restricted to the owner in this version. Members can play their own saved or imported audio. Registration, login and writes have persistent rate limits outside learning-data backups. Member limits include:
 
-La génération IA est réservée au propriétaire dans cette version. Les membres peuvent lire leurs propres sons déjà sauvegardés/importés. Les inscriptions, connexions et écritures ont des limites persistantes hors des sauvegardes pédagogiques. Les membres disposent de 10 opérations de sauvegarde par 24 heures ; imports de 8 Mio au maximum, trois sauvegardes manuelles et deux de sécurité conservées. Les imports expirés sont nettoyés. Le seuil de stockage de 48 Mio suspend les autres écritures mais permet encore un export ou une restauration ; ce seuil est un contrôle préalable, pas une limite physique stricte pendant les transactions. Les limites historiques du propriétaire sont conservées. Les uploads ont un délai de lecture et deux inspections simultanées au maximum.
+- 10 backup operations per 24 hours and imports of at most 8 MiB.
+- Three retained manual backups and two safety backups; expired pending imports are cleaned up.
+- A 48 MiB storage threshold that blocks other writes while still allowing export or restore. This is a preflight check, not a strict physical limit during transactions.
 
-Les sauvegardes d’exploitation doivent aussi couvrir le registre `accounts.sqlite3` et tous les répertoires du volume, avec des snapshots SQLite cohérents ; les exports individuels **Mes données** ne sauvegardent pas les identités. Conserver les anciens fichiers et le registre pour un retour arrière : repasser en `private` masque les comptes membres et retrouve le profil historique, sans supprimer leurs données.
+The owner's existing limits are retained. Upload reads have a deadline, with at most two inspections running concurrently.
 
-## Configurer l’accès
+Operational backups must include `accounts.sqlite3` and all data directories on the volume, using consistent SQLite snapshots. Individual **Mes données** exports do not back up identities. Keep the registry and existing files for rollback: switching back to `private` hides member accounts and restores access to the historical workspace without deleting member data.
 
-Depuis la racine du dépôt :
+## Configure standalone access
+
+From the repository root:
 
 ```sh
 cp deploy/.env.example deploy/.env
 chmod 600 deploy/.env
 ```
 
-Choisir `APP_HOST` et `APP_LOGIN`, puis générer le hash du mot de passe avec une saisie interactive :
+Set `APP_HOST`. For the default `private` mode, choose `APP_LOGIN` and generate a password hash interactively:
 
 ```sh
 docker run --rm -it caddy:2.11.4-alpine caddy hash-password --algorithm bcrypt
 ```
 
-Copier le hash obtenu dans `APP_PASSWORD_HASH`, entre apostrophes simples. Elles empêchent Compose d’interpréter les caractères `$` du hash. Conserver le mot de passe dans un gestionnaire de mots de passe ; il ne figure ni dans la commande ni dans le fichier de configuration.
+Copy the hash into `APP_PASSWORD_HASH`, enclosed in single quotes to prevent Compose from interpreting its `$` characters. Keep the password in a password manager; it belongs in neither the command nor the configuration file. These two Basic Auth variables are unnecessary once `accounts` mode is enabled.
 
-Générer ensuite le secret partagé du proxy :
+Generate the shared proxy secret for either mode:
 
 ```sh
 openssl rand -hex 32
 ```
 
-Copier les 64 caractères dans `APP_PROXY_SECRET`. Compose fournit la même valeur à Caddy et à l’application. Caddy remplace tout en-tête `X-App-Proxy-Secret` reçu et retire l’en-tête d’authentification avant la transmission à Next.js. Le nom d’hôte et l’origine de la requête restent conservés ; l’application attend exactement `https://APP_HOST`.
+Copy the 64 characters into `APP_PROXY_SECRET`. Compose supplies the same value to Caddy and the application. Caddy replaces incoming `X-App-Proxy-Secret` headers and removes Authorization before forwarding to Next.js. It preserves the hostname and origin; the application expects exactly `https://APP_HOST`.
 
-`OPENAI_API_KEY` est facultatif et reste une variable du serveur. Les cours, les exercices, les révisions et les données personnelles fonctionnent sans cette clé. Elle permet de créer de nouveaux audios avec les voix masculine (Cedar) et féminine (Nova) ; sans elle, les fichiers audio déjà conservés restent lisibles. Les lecteurs de podcasts et de vidéos dépendent de leurs hébergeurs.
+`OPENAI_API_KEY` is optional and stays on the server. Courses, exercises, reviews and personal data work without it. It enables written AI assistance and new audio using the configured Cedar and Nova voices. Previously saved audio works without the key. Embedded podcast and video players depend on their hosts.
 
-Le fichier `deploy/.env` est exclu de Git et du contexte de construction Docker. Aucun secret ne doit être ajouté au Dockerfile ou aux arguments de construction.
+`deploy/.env` is excluded from Git and the Docker build context. Never put secrets in the Dockerfile or build arguments. The proxy caps request bodies at 256 MiB, including backup uploads; member imports have the lower limit described above.
 
-Le proxy limite le corps des requêtes à 256 Mio, notamment pour l’import de sauvegardes.
+## Build and start standalone Compose
 
-## Construire et démarrer
-
-Valider la configuration sans afficher les variables sensibles :
+Validate the configuration without displaying sensitive variables, then build and start:
 
 ```sh
 docker compose --env-file deploy/.env config --quiet
@@ -109,35 +127,37 @@ docker compose --env-file deploy/.env up -d
 docker compose --env-file deploy/.env ps
 ```
 
-Ouvrir `https://ukrainien.example.com` en remplaçant ce nom par `APP_HOST`. Le navigateur demande l’identifiant et le mot de passe. Caddy obtient le certificat automatiquement lorsque le DNS et les ports sont prêts. Une requête HTTPS sans identifiants doit recevoir une réponse `401` :
+Open `https://ukrainien.example.com`, replacing the example with `APP_HOST`. Caddy obtains the certificate automatically once DNS and ports are ready. In **private mode**, the browser prompts for the HTTP login and password; an HTTPS request without credentials must return `401`:
 
 ```sh
 curl --head https://ukrainien.example.com
 ```
 
-Pour consulter le démarrage :
+In **accounts mode**, this page must be public. Check instead that personal APIs reject requests without a session, then sign in through `/connexion` and confirm the expected workspace.
+
+Inspect startup logs with:
 
 ```sh
 docker compose --env-file deploy/.env logs --tail 100 app caddy
 ```
 
-La sortie de `docker compose config` sans `--quiet` peut contenir les secrets : ne pas la publier.
+`docker compose config` without `--quiet` can print secrets. Do not publish that output.
 
-## Données et sauvegardes
+## Data and backups
 
-Le volume nommé `app_data` contient `/app/.data`, notamment la base SQLite, les audios conservés et les sauvegardes de l’application. Un volume neuf reçoit les permissions du répertoire de l’image : propriétaire UID/GID 1000, utilisé par le compte `node`. Les volumes `caddy_data` et `caddy_config` conservent les données de Caddy, dont ses certificats.
+The named `app_data` volume contains `/app/.data`, including SQLite databases, saved audio and application backups. A new volume inherits the image directory's ownership: UID/GID 1000, used by the `node` account. The standalone `caddy_data` and `caddy_config` volumes preserve Caddy's state, including certificates.
 
-Garder le même nom de projet Compose (`apprendre-ukrainien`) permet de retrouver ces volumes lors des mises à jour. Une image reconstruite ou un conteneur remplacé ne les efface pas. Ne pas exécuter `docker compose down -v` : cette option supprimerait les volumes et les données.
+Keep the Compose project name `apprendre-ukrainien` to reuse these volumes during updates. Rebuilding an image or replacing a container does not erase them. Do not run `docker compose down -v`: it deletes the volumes and their data.
 
-Avant de migrer depuis une installation locale, créer et télécharger une sauvegarde depuis la page **Mes données**. Après connexion au VPS, utiliser cette même page pour prévisualiser puis restaurer le fichier. Les brouillons restés dans un onglet du navigateur doivent être enregistrés ou exportés séparément.
+Before migrating from a local installation, create and download a backup through **Mes données**. After signing in on the server, use that page to preview and restore the file. Save or export drafts left in browser tabs separately.
 
-Conserver une copie téléchargée des sauvegardes en dehors du VPS. Une copie présente uniquement dans `app_data` ne protège pas contre la perte du serveur. Le fichier `deploy/.env` se conserve séparément : une sauvegarde de l’application ne contient pas les identifiants du proxy ni la clé API.
+Keep downloaded backups outside the server. A copy stored only in `app_data` does not protect against server loss. Store `deploy/.env` separately: application backups contain neither proxy credentials nor API keys. In accounts mode, also back up the identity registry and all member directories as described above.
 
-## Mettre à jour
+## Updates
 
-Créer une sauvegarde dans l’application et la télécharger hors du serveur avant chaque mise à jour. Garder également la référence de la version actuellement déployée.
+Create an application backup and download it off the server before each update. Record the currently deployed version too.
 
-Après récupération de la nouvelle version du dépôt, construire l’image pendant que l’ancienne application reste disponible. Arrêter ensuite l’unique serveur avant son remplacement :
+After obtaining the new repository version, build the image while the existing application remains available. Stop the single application server before replacing it:
 
 ```sh
 docker compose --env-file deploy/.env build --pull app
@@ -146,32 +166,32 @@ docker compose --env-file deploy/.env up -d --no-deps app
 docker compose --env-file deploy/.env ps
 ```
 
-Une courte interruption est prévue pendant ce remplacement. Les migrations s’appliquent à l’ouverture de la base. Utiliser un seul conteneur `app` : ni plusieurs réplicas, ni démarrage simultané de deux versions sur le même volume SQLite. Un retour à une version ancienne peut nécessiter de restaurer la sauvegarde correspondante ; ne pas ouvrir une base déjà migrée avec un ancien code sans vérifier sa compatibilité.
+Expect a short interruption. Migrations run when the database opens. Use one `app` container: no replicas and no two versions running on the same SQLite volume. Rolling back may require restoring the corresponding backup. Check compatibility before opening a migrated database with older code.
 
-Après modification des variables d’accès ou du Caddyfile, recréer Caddy pour prendre en compte la configuration :
+After changing gateway access variables or the Caddyfile, recreate Caddy:
 
 ```sh
 docker compose --env-file deploy/.env up -d --no-deps --force-recreate caddy
 ```
 
-Si `APP_PROXY_SECRET` ou `APP_HOST` change, recréer également `app`, en l’arrêtant d’abord comme ci-dessus.
+If `APP_PROXY_SECRET`, `APP_HOST` or `APP_ACCESS_MODE` changes, also recreate `app`, stopping it first as above. Keep gateway and application values synchronized. For an access-mode change, stop `app` before recreating Caddy, then start `app` with the matching mode to avoid serving requests while their modes differ. On Coolify, stop the resource before redeploying a changed access mode so both services receive the same runtime values before serving requests.
 
-## Plusieurs projets sur le même VPS
+## Several projects on one server
 
-Un seul proxy doit publier les ports 80 et 443. Si Caddy est déjà partagé entre plusieurs projets, ne pas démarrer le service `caddy` fourni ici. Ajouter le bloc de site du Caddyfile à sa configuration existante, avec un nom d’hôte et des variables propres à cette application. Conserver les autres blocs de sites.
+Only one proxy should publish ports 80 and 443. If Caddy already serves several projects, do not start the supplied `caddy` service. Add this application's site block and access snippets from [Caddyfile](Caddyfile) to the shared configuration, using a distinct hostname and application-specific variables and snippet names. Retain the other site blocks.
 
-Connecter le service `app` et le Caddy partagé à un réseau Docker commun. Utiliser un alias réseau unique pour cette application, puis adapter `reverse_proxy app:3000` à cet alias. L’application garde ses variables `APP_ORIGIN` et `APP_PROXY_SECRET`, son volume personnel et aucun port public. Le Caddy partagé doit recevoir le même secret, imposer l’authentification sur tout ce site et remplacer l’en-tête du proxy comme dans le fichier fourni.
+Connect `app` and the shared Caddy instance to a common Docker network. Give this application a unique network alias and replace `reverse_proxy app:3000` with that alias. Keep the application's `APP_ORIGIN`, `APP_PROXY_SECRET`, personal volume and lack of a public port. Shared Caddy must use the same proxy secret and access mode, replace the proxy header as supplied, and enforce Basic Auth for the whole site when the mode is `private`. In `accounts` mode, leave course pages public and let the application enforce personal sessions.
 
-Les autres projets restent sur leurs propres volumes et noms d’hôte. L’ajout de ce sous-domaine ne demande aucun changement du site à la racine du domaine.
+Other projects retain their own volumes and hostnames. Adding this subdomain does not require changes to the site at the domain root.
 
-## Références
+## References
 
-- [Applications Docker Compose dans Coolify](https://coolify.io/docs/applications/builds/docker-compose)
-- [Variables runtime et valeurs littérales dans Coolify](https://coolify.io/docs/applications/configuration/environment-variables)
-- [Stockage persistant dans Coolify](https://coolify.io/docs/applications/configuration/persistent-storage)
-- [Remplacement des conteneurs et Docker Compose dans Coolify](https://coolify.io/docs/applications/deployments/rolling-updates)
-- [Configurations embarquées de Docker Compose](https://docs.docker.com/reference/compose-file/configs/)
-- [Authentification HTTP de Caddy](https://caddyserver.com/docs/caddyfile/directives/basic_auth)
-- [Proxy HTTP et en-têtes](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
-- [Variables et interpolation de Docker Compose](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
-- [Persistance des volumes Docker](https://docs.docker.com/engine/storage/volumes/)
+- [Docker Compose applications in Coolify](https://coolify.io/docs/applications/builds/docker-compose)
+- [Runtime variables and literal values in Coolify](https://coolify.io/docs/applications/configuration/environment-variables)
+- [Persistent storage in Coolify](https://coolify.io/docs/applications/configuration/persistent-storage)
+- [Container replacement and Docker Compose in Coolify](https://coolify.io/docs/applications/deployments/rolling-updates)
+- [Embedded Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/)
+- [Caddy HTTP authentication](https://caddyserver.com/docs/caddyfile/directives/basic_auth)
+- [HTTP proxying and headers](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)
+- [Docker Compose variables and interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
+- [Docker volume persistence](https://docs.docker.com/engine/storage/volumes/)
