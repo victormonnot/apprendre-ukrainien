@@ -445,6 +445,7 @@ export function ScenePractice({
                 <li
                   key={line.id}
                   className={`${own ? "cafe-your-turn" : "cafe-partner-turn"} cafe-turn-${line.speakerId}`}
+                  data-scene-speaker={own ? line.speakerId : undefined}
                 >
                   {line.direction && (
                     <p className="cafe-direction">{line.direction}</p>

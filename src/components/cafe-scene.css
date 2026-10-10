@@ -1,0 +1,443 @@
+.cafe-stage {
+  --cafe-px: 0;
+  --cafe-py: 0;
+  position: relative;
+  container-type: size;
+  min-height: 22rem;
+  overflow: hidden;
+  background: #efe0cc;
+}
+.cafe-stage[data-ambience="day"] {
+  --cafe-wall-top: #f4e8d8;
+  --cafe-wall-bottom: #eadbc5;
+  --cafe-sky-top: #8fc6e3;
+  --cafe-sky-bottom: #e6f2ef;
+  --cafe-sun: #fff4c9;
+  --cafe-city: #b7cdd6;
+  --cafe-trees: #6f9c5c;
+  --cafe-shaft: #fff1d2;
+  --cafe-tint: transparent;
+}
+.cafe-stage[data-ambience="golden"] {
+  --cafe-wall-top: #f3dcc0;
+  --cafe-wall-bottom: #e6c7a3;
+  --cafe-sky-top: #f2a76b;
+  --cafe-sky-bottom: #fde0b4;
+  --cafe-sun: #fff0c2;
+  --cafe-city: #d9b7a3;
+  --cafe-trees: #8a8f4f;
+  --cafe-shaft: #ffd49a;
+  --cafe-tint: rgb(255 160 80 / 16%);
+}
+.cafe-wall-top {
+  stop-color: var(--cafe-wall-top);
+}
+.cafe-wall-bottom {
+  stop-color: var(--cafe-wall-bottom);
+}
+.cafe-sky-top {
+  stop-color: var(--cafe-sky-top);
+}
+.cafe-sky-bottom {
+  stop-color: var(--cafe-sky-bottom);
+}
+.cafe-sun-glow,
+.cafe-shaft,
+.cafe-spot-color {
+  stop-color: var(--cafe-shaft);
+}
+.cafe-sun-disc {
+  fill: var(--cafe-sun);
+}
+.cafe-city {
+  fill: var(--cafe-city);
+}
+.cafe-landmark {
+  fill: #7fb2d8;
+}
+.cafe-domes {
+  fill: #e8b84a;
+}
+.cafe-trees {
+  fill: var(--cafe-trees);
+}
+.cafe-trees-light {
+  fill: #9cc47e;
+  opacity: 0.6;
+}
+
+.cafe-camera {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.06) translateX(var(--cafe-cam, 0%));
+  transition: transform 1.2s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.cafe-stage[data-focus="anna"] {
+  --cafe-cam: 1.6%;
+}
+.cafe-stage[data-focus="maxime"] {
+  --cafe-cam: -1.6%;
+}
+.cafe-layer {
+  --depth: 6;
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: translate3d(
+    calc(var(--cafe-px) * var(--depth) * -1px),
+    calc(var(--cafe-py) * var(--depth) * -0.6px),
+    0
+  );
+  transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+  will-change: transform;
+}
+.cafe-layer-light,
+.cafe-layer-glow {
+  --depth: 8;
+  mix-blend-mode: screen;
+}
+.cafe-layer-cast,
+.cafe-layer-speech {
+  --depth: 14;
+}
+.cafe-layer-front {
+  --depth: 30;
+}
+.cafe-layer-speech {
+  pointer-events: none;
+}
+.cafe-atmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 95% at 50% 42%,
+      transparent 58%,
+      rgb(58 32 16 / 26%) 100%
+    ),
+    linear-gradient(var(--cafe-tint), var(--cafe-tint));
+  pointer-events: none;
+}
+.cafe-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.22;
+}
+
+/* Characters */
+.cafe-rig {
+  transition: filter 0.6s ease;
+}
+.cafe-stage[data-focus="anna"] .cafe-rig-maxime,
+.cafe-stage[data-focus="maxime"] .cafe-rig-anna {
+  filter: brightness(0.9) saturate(0.88);
+}
+.cafe-rig-lean {
+  transform-box: view-box;
+  transition: transform 0.8s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.cafe-rig-anna .cafe-rig-lean {
+  transform-origin: 504px 900px;
+}
+.cafe-rig-maxime .cafe-rig-lean {
+  transform-origin: 1096px 900px;
+}
+.cafe-stage[data-focus="anna"] .cafe-rig-anna .cafe-rig-lean {
+  transform: rotate(1.4deg);
+}
+.cafe-stage[data-focus="maxime"] .cafe-rig-maxime .cafe-rig-lean {
+  transform: rotate(-1.4deg);
+}
+.cafe-rig-breath {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cafe-breath 4.6s ease-in-out infinite;
+}
+.cafe-rig-maxime .cafe-rig-breath {
+  animation-duration: 5.3s;
+  animation-delay: -1.8s;
+}
+.cafe-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cafe-blink 5.2s infinite;
+}
+.cafe-rig-maxime .cafe-eyes {
+  animation-duration: 6.6s;
+  animation-delay: -2.4s;
+}
+.cafe-rig-nod {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.cafe-stage[data-talking="maxime"] .cafe-rig-anna .cafe-rig-nod,
+.cafe-stage[data-talking="anna"] .cafe-rig-maxime .cafe-rig-nod {
+  animation: cafe-nod 2.8s ease-in-out infinite;
+}
+@keyframes cafe-breath {
+  50% {
+    transform: scale(1.006, 1.014);
+  }
+}
+@keyframes cafe-blink {
+  0%,
+  95%,
+  100% {
+    transform: scaleY(1);
+  }
+  97.5% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes cafe-nod {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(2.4deg) translateY(2px);
+  }
+  55% {
+    transform: rotate(-0.6deg);
+  }
+}
+
+/* Ambient motion */
+.cafe-clouds {
+  animation: cafe-clouds 50s ease-in-out infinite alternate;
+}
+.cafe-birds {
+  animation: cafe-birds 24s linear infinite;
+}
+.cafe-cat-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: cafe-breath 3.2s ease-in-out infinite;
+}
+.cafe-cat-tail {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: cafe-tail 5s ease-in-out infinite;
+}
+.cafe-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  animation: cafe-sway 7s ease-in-out infinite alternate;
+}
+.cafe-sway-sill {
+  transform-origin: 50% 100%;
+  animation-duration: 9s;
+}
+.cafe-steam path {
+  fill: none;
+  stroke: #fff8ee;
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0.5;
+  animation: cafe-steam 3.6s ease-in-out infinite;
+}
+.cafe-steam path:nth-child(2n) {
+  animation-delay: -1.8s;
+}
+.cafe-twinkle {
+  animation: cafe-twinkle 2.8s ease-in-out infinite alternate;
+}
+.cafe-lamp-glow {
+  animation: cafe-twinkle 6s ease-in-out infinite alternate;
+}
+.cafe-spot {
+  transform-box: view-box;
+  transition: transform 1.1s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.cafe-stage[data-focus="anna"] .cafe-spot {
+  transform: translateX(-296px);
+}
+.cafe-stage[data-focus="maxime"] .cafe-spot {
+  transform: translateX(296px);
+}
+.cafe-stage[data-focus="none"] .cafe-spot {
+  opacity: 0;
+}
+.cafe-dust circle {
+  fill: #fff;
+  opacity: 0;
+  animation: cafe-dust 9s linear infinite;
+}
+@keyframes cafe-clouds {
+  from {
+    transform: translateX(-70px);
+  }
+  to {
+    transform: translateX(70px);
+  }
+}
+@keyframes cafe-birds {
+  0% {
+    transform: translate(-90px, 0);
+  }
+  45%,
+  100% {
+    transform: translate(520px, -40px);
+  }
+}
+@keyframes cafe-tail {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+}
+@keyframes cafe-sway {
+  from {
+    transform: rotate(-1.5deg);
+  }
+  to {
+    transform: rotate(1.5deg);
+  }
+}
+@keyframes cafe-steam {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: translateY(6px);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-6px);
+  }
+}
+@keyframes cafe-twinkle {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cafe-dust {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  20%,
+  70% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-36px, -90px);
+  }
+}
+
+/* Speech bubble, anchored to the cropped illustration ("xMidYMax slice"). */
+.cafe-bubble {
+  --scale: max(100cqw / 1600, 100cqh / 900);
+  --head: calc(50cqw + (var(--x) - 800) * var(--scale));
+  position: absolute;
+  bottom: calc((900 - var(--top) + 16) * var(--scale));
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0.55rem 0.95rem 0.65rem;
+  border-radius: 1rem;
+  background: white;
+  box-shadow:
+    0 0 0 1px rgb(47 34 25 / 7%),
+    0 12px 26px -12px rgb(47 34 25 / 45%);
+  color: #2f2219;
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.35;
+  animation: cafe-bubble-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+.cafe-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -0.45rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0 0 0.25rem;
+  background: white;
+  box-shadow: 1px 1px 0 rgb(47 34 25 / 7%);
+  transform: rotate(45deg);
+}
+.cafe-bubble-anna {
+  left: max(0.75rem, calc(var(--head) - 2.25rem));
+  max-width: min(22rem, calc(100cqw - var(--head) + 1.5rem));
+  transform-origin: 2.25rem 100%;
+}
+.cafe-bubble-anna::after {
+  left: 1.75rem;
+}
+.cafe-bubble-maxime {
+  right: max(0.75rem, calc(100cqw - var(--head) - 2.25rem));
+  max-width: min(22rem, calc(var(--head) + 1.5rem));
+  transform-origin: calc(100% - 2.25rem) 100%;
+}
+.cafe-bubble-maxime::after {
+  right: 1.75rem;
+}
+.cafe-bubble-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cafe-bubble-anna .cafe-bubble-name {
+  color: #93402a;
+}
+.cafe-bubble-maxime .cafe-bubble-name {
+  color: #2d5649;
+}
+@keyframes cafe-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+}
+
+@media (max-width: 1100px) {
+  .cafe-stage {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+}
+@media (max-width: 600px) {
+  .cafe-stage {
+    aspect-ratio: 4 / 3;
+  }
+  .cafe-bubble {
+    padding: 0.4rem 0.75rem 0.5rem;
+    border-radius: 0.8rem;
+    font-size: 0.95rem;
+  }
+}
+.cafe-stage[data-offscreen] *,
+.cafe-stage[data-offscreen] *::after {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cafe-stage *,
+  .cafe-stage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .cafe-layer {
+    transform: none;
+  }
+}
+@media print {
+  .cafe-stage {
+    display: none !important;
+  }
+}
