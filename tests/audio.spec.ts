@@ -70,6 +70,16 @@ async function voiceSettings(player: Locator) {
     exact: true,
   });
   const select = player.getByLabel("Voix", { exact: true });
+  await toggle.scrollIntoViewIfNeeded();
+  // Let scrolling settle before opening this dismiss-on-scroll popover.
+  await player
+    .page()
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
   if (!(await select.isVisible())) await toggle.click();
   await expect(select).toBeVisible();
   return select;
@@ -246,14 +256,20 @@ test.describe("audio playback and repetition", () => {
     ).toBe(paused.url);
     if (isMobile) {
       await page.setViewportSize({ width: 320, height: 800 });
+      await expect(player.getByLabel("Voix", { exact: true })).toBeHidden();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
     }
-    await voiceSettings(player);
-    await player.getByRole("button", { name: "Arrêter", exact: true }).click();
+    // The short fixture may finish during the checks above; its stop button
+    // correctly disappears then. Verify the replay ends without another request.
+    await expect(player).toHaveAttribute("data-audio-phase", "finished");
+    expect(
+      await audio.evaluate((element: HTMLAudioElement) => element.paused),
+    ).toBe(true);
+    expect(requests).toHaveLength(1);
   });
 
   test("repetition pauses its silence and stops after the selected number of listens", async ({

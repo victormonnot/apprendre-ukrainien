@@ -73,7 +73,18 @@ function watchSources(page: Page) {
 }
 
 async function fixedVoiceSettings(audio: Locator) {
-  await audio.getByRole("button", { name: "Vitesse", exact: true }).click();
+  const toggle = audio.getByRole("button", { name: "Vitesse", exact: true });
+  await toggle.scrollIntoViewIfNeeded();
+  // Let scrolling settle before opening this dismiss-on-scroll popover.
+  await audio
+    .page()
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+  await toggle.click();
   await expect(
     audio.getByRole("button", { name: "Lecture ralentie" }),
   ).toBeVisible();

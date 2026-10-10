@@ -11,29 +11,29 @@ function documentPath(slug: string) {
 }
 
 async function exerciseSections(page: Page) {
-  return page
-    .locator("article.prose .exercise-instructions h3")
-    .evaluateAll((headings) => {
-      const exercises: Record<string, string> = {};
+  const headings = page.locator("article.prose .exercise-instructions h3");
+  await expect(headings.first()).toBeVisible();
+  return headings.evaluateAll((headings) => {
+    const exercises: Record<string, string> = {};
 
-      for (const heading of headings) {
-        const match = heading.textContent?.match(/^Exercice\s+(\d+)\s*[—–-]/);
-        const number = match?.[1];
-        if (!number) continue;
+    for (const heading of headings) {
+      const match = heading.textContent?.match(/^Exercice\s+(\d+)\s*[—–-]/);
+      const number = match?.[1];
+      if (!number) continue;
 
-        const parts = [heading.textContent ?? ""];
-        let sibling = heading.nextElementSibling;
+      const parts = [heading.textContent ?? ""];
+      let sibling = heading.nextElementSibling;
 
-        while (sibling && !/^H[1-3]$/.test(sibling.tagName)) {
-          parts.push(sibling.textContent ?? "");
-          sibling = sibling.nextElementSibling;
-        }
-
-        exercises[number] = parts.join(" ").replace(/\s+/g, " ").trim();
+      while (sibling && !/^H[1-3]$/.test(sibling.tagName)) {
+        parts.push(sibling.textContent ?? "");
+        sibling = sibling.nextElementSibling;
       }
 
-      return exercises;
-    });
+      exercises[number] = parts.join(" ").replace(/\s+/g, " ").trim();
+    }
+
+    return exercises;
+  });
 }
 
 test("opens the module and moves between its three connected documents", async ({
