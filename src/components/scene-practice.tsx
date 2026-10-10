@@ -377,7 +377,7 @@ export function ScenePractice({
           </select>
         </div>
       </div>
-      <p>
+      <p className="cafe-practice-intro">
         Écris les répliques de ton personnage en ukrainien. Les indications en
         français donnent l’intention. Tu peux consulter un modèle si tu en as
         besoin.
@@ -444,128 +444,159 @@ export function ScenePractice({
               return (
                 <li
                   key={line.id}
-                  className={own ? "cafe-your-turn" : "cafe-partner-turn"}
+                  className={`${own ? "cafe-your-turn" : "cafe-partner-turn"} cafe-turn-${line.speakerId}`}
                 >
                   {line.direction && (
                     <p className="cafe-direction">{line.direction}</p>
                   )}
-                  <span className="cafe-speaker">
-                    {String(index + 1).padStart(2, "0")} · {character.name}
-                    {own ? " · Toi" : ""}
-                  </span>
-                  {own ? (
-                    <>
-                      <label htmlFor={`answer-${line.id}`}>{line.prompt}</label>
-                      <textarea
-                        id={`answer-${line.id}`}
-                        lang="uk"
-                        maxLength={SCENE_ANSWER_MAX_LENGTH}
-                        disabled={locked}
-                        value={answers[line.id] ?? ""}
-                        spellCheck={false}
-                        onChange={(event) => {
-                          setAnswers((old) => ({
-                            ...old,
-                            [line.id]: event.target.value,
-                          }));
-                          setNotice("");
-                        }}
-                      />
-                      <button
-                        className="cafe-model-button"
-                        type="button"
-                        disabled={busy || loading || !!pending || !!conflict}
-                        aria-expanded={models.includes(line.id)}
-                        onClick={() => {
-                          setHelpUsed(true);
-                          setConsultedModel(true);
-                          setModels((old) =>
-                            old.includes(line.id)
-                              ? old.filter((id) => id !== line.id)
-                              : [...old, line.id],
-                          );
-                        }}
-                      >
-                        {" "}
-                        {models.includes(line.id)
-                          ? "Masquer le modèle"
-                          : "Voir le modèle"}
-                      </button>
-                      {models.includes(line.id) && (
-                        <div className="cafe-model">
-                          <p lang="uk">{line.ukrainian}</p>
-                          <Markdown rehypePlugins={[rehypeUkrainianLanguage]}>
-                            {line.help}
-                          </Markdown>
-                          <AudioPlayer
-                            compact
-                            fixedVoiceId={sceneVoiceIds[line.speakerId]}
-                            text={line.ukrainian}
-                            source={{
-                              kind: "scene",
-                              sceneId: scene.id,
-                              variantId: scene.variantId,
-                              version: scene.version,
-                              lineId: line.id,
+                  <div className="cafe-turn-row">
+                    <span
+                      className={`cafe-avatar cafe-avatar-${line.speakerId}`}
+                      aria-hidden="true"
+                    >
+                      {character.name.slice(0, 1)}
+                    </span>
+                    <div className="cafe-turn-body">
+                      <span className="cafe-speaker">
+                        {character.name}
+                        <span className="cafe-line-number">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        {own && <span className="cafe-you">Toi</span>}
+                      </span>
+                      {own ? (
+                        <>
+                          <label htmlFor={`answer-${line.id}`}>
+                            {line.prompt}
+                          </label>
+                          <textarea
+                            id={`answer-${line.id}`}
+                            lang="uk"
+                            maxLength={SCENE_ANSWER_MAX_LENGTH}
+                            disabled={locked}
+                            value={answers[line.id] ?? ""}
+                            spellCheck={false}
+                            onChange={(event) => {
+                              setAnswers((old) => ({
+                                ...old,
+                                [line.id]: event.target.value,
+                              }));
+                              setNotice("");
                             }}
                           />
-                        </div>
+                          <button
+                            className="cafe-model-button"
+                            type="button"
+                            disabled={
+                              busy || loading || !!pending || !!conflict
+                            }
+                            aria-expanded={models.includes(line.id)}
+                            onClick={() => {
+                              setHelpUsed(true);
+                              setConsultedModel(true);
+                              setModels((old) =>
+                                old.includes(line.id)
+                                  ? old.filter((id) => id !== line.id)
+                                  : [...old, line.id],
+                              );
+                            }}
+                          >
+                            {models.includes(line.id)
+                              ? "Masquer le modèle"
+                              : "Voir le modèle"}
+                          </button>
+                          {models.includes(line.id) && (
+                            <div className="cafe-model">
+                              <p lang="uk">{line.ukrainian}</p>
+                              <Markdown
+                                rehypePlugins={[rehypeUkrainianLanguage]}
+                              >
+                                {line.help}
+                              </Markdown>
+                              <AudioPlayer
+                                compact
+                                fixedVoiceId={sceneVoiceIds[line.speakerId]}
+                                text={line.ukrainian}
+                                source={{
+                                  kind: "scene",
+                                  sceneId: scene.id,
+                                  variantId: scene.variantId,
+                                  version: scene.version,
+                                  lineId: line.id,
+                                }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="cafe-partner-uk" lang="uk">
+                            {line.ukrainian}
+                          </p>
+                          <p>{line.french}</p>
+                        </>
                       )}
-                    </>
-                  ) : (
-                    <>
-                      <p className="cafe-partner-uk" lang="uk">
-                        {line.ukrainian}
-                      </p>
-                      <p>{line.french}</p>
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </li>
               );
             })}
           </ol>
-          <label className="cafe-checkbox">
-            <input
-              type="checkbox"
-              checked={helpUsed}
-              disabled={locked || consultedModel || workspace.draft.helpUsed}
-              onChange={(event) => setHelpUsed(event.target.checked)}
-            />
-            J’ai utilisé une aide pour cet essai (modèle, cours, dictionnaire…).
-          </label>
-          <p className="cafe-small">
-            Une aide consultée ou déjà enregistrée reste indiquée pour cet
-            essai. La comparaison écrite ne valide ni la prononciation ni la
-            maîtrise.
-          </p>
-          <div className="cafe-actions">
-            <button
-              type="button"
-              disabled={busy || loading || !!conflict || (!dirty && !pending)}
-              onClick={() => void save("save")}
-            >
-              {pending ? "Réessayer l’envoi" : "Enregistrer le brouillon"}
-            </button>
-            <button
-              className="cafe-primary"
-              type="submit"
-              disabled={
-                locked ||
-                ownLines.some((line) => !(answers[line.id] ?? "").trim())
-              }
-            >
-              Remettre mon essai
-            </button>
+          <div className="cafe-practice-footer">
+            <p className="cafe-practice-progress">
+              <strong>
+                {
+                  ownLines.filter((line) => (answers[line.id] ?? "").trim())
+                    .length
+                }{" "}
+                sur {ownLines.length}
+              </strong>{" "}
+              répliques écrites
+            </p>
+            <label className="cafe-checkbox">
+              <input
+                type="checkbox"
+                checked={helpUsed}
+                disabled={locked || consultedModel || workspace.draft.helpUsed}
+                onChange={(event) => setHelpUsed(event.target.checked)}
+              />
+              J’ai utilisé une aide pour cet essai (modèle, cours,
+              dictionnaire…).
+            </label>
+            <p className="cafe-small">
+              Une aide consultée ou déjà enregistrée reste indiquée pour cet
+              essai. La comparaison écrite ne valide ni la prononciation ni la
+              maîtrise.
+            </p>
+            <div className="cafe-actions">
+              <button
+                type="button"
+                disabled={busy || loading || !!conflict || (!dirty && !pending)}
+                onClick={() => void save("save")}
+              >
+                {pending ? "Réessayer l’envoi" : "Enregistrer le brouillon"}
+              </button>
+              <button
+                className="cafe-primary"
+                type="submit"
+                disabled={
+                  locked ||
+                  ownLines.some((line) => !(answers[line.id] ?? "").trim())
+                }
+              >
+                Remettre mon essai
+              </button>
+            </div>
+            <p className="cafe-small">
+              {busy
+                ? "Enregistrement…"
+                : dirty
+                  ? "Modifications à enregistrer."
+                  : workspace.draft.updatedAt
+                    ? "Brouillon conservé dans l’application."
+                    : "Les réponses seront conservées avec cette version de la scène."}
+            </p>
           </div>
-          <p className="cafe-small">
-            {busy
-              ? "Enregistrement…"
-              : dirty
-                ? "Modifications à enregistrer."
-                : workspace.draft.updatedAt
-                  ? "Brouillon conservé dans l’application."
-                  : "Les réponses seront conservées avec cette version de la scène."}
-          </p>
         </form>
       )}
       {!!workspace?.attempts.length && (

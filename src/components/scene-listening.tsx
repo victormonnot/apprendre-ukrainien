@@ -37,7 +37,6 @@ export function SceneListening({
   const [message, setMessage] = useState("");
   const line = scene.lines.find((item) => item.id === selectedLineId);
   const index = scene.lines.findIndex((item) => item.id === selectedLineId);
-  const speaker = scene.characters.find((item) => item.id === line?.speakerId);
 
   useEffect(() => {
     activity.current = onActivity;
@@ -103,40 +102,74 @@ export function SceneListening({
       data-scene-listening
       data-scene-following={following ? "true" : "false"}
     >
-      <h3 id={`${id}-title`}>Écouter la scène</h3>
-      <p className="scene-listening-note">
-        Anna : voix féminine · Maxime : voix masculine. Voix de synthèse.
-      </p>
-      <div
-        className="scene-listening-modes"
-        aria-label="Mode d’écoute de la scène"
-      >
-        {(
-          [
-            ["conversation", "Conversation"],
-            ["repeat", "Répéter cette réplique"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={mode === value}
-            onClick={() => {
-              player.current?.stop();
-              cancelQueue();
-              setMode(value);
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="scene-listening-heading">
+        <h3 id={`${id}-title`}>Écouter la scène</h3>
+        <div
+          className="scene-listening-modes"
+          role="group"
+          aria-label="Mode d’écoute de la scène"
+        >
+          {(
+            [
+              ["conversation", "Conversation"],
+              ["repeat", "Répéter cette réplique"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={mode === value}
+              onClick={() => {
+                player.current?.stop();
+                cancelQueue();
+                setMode(value);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <p className="scene-listening-current">
-        Réplique {index + 1}/{scene.lines.length} · {speaker?.name}
-        <span lang="uk">{line.ukrainian}</span>
-      </p>
-      {mode === "conversation" ? (
-        <div className="scene-conversation-controls">
+      {mode === "repeat" && (
+        <div className="scene-repeat-settings">
+          <div>
+            <label htmlFor={`${id}-repetitions`}>Nombre d’écoutes</label>
+            <select
+              id={`${id}-repetitions`}
+              value={repetitions}
+              onChange={(event) => {
+                cancelQueue();
+                setRepetitions(Number(event.target.value));
+              }}
+            >
+              {[3, 5].map((value) => (
+                <option value={value} key={value}>
+                  {value} écoutes
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor={`${id}-gap`}>Silence pour répéter</label>
+            <select
+              id={`${id}-gap`}
+              value={gapSeconds}
+              onChange={(event) => {
+                cancelQueue();
+                setGapSeconds(Number(event.target.value));
+              }}
+            >
+              {[2, 4, 6].map((value) => (
+                <option value={value} key={value}>
+                  {value} secondes
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+      <div className="scene-listening-actions">
+        {mode === "conversation" && (
           <button
             type="button"
             className="scene-listening-start"
@@ -149,69 +182,48 @@ export function SceneListening({
               player.current?.play();
             }}
           >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 4.5v15l13-7.5z" />
+            </svg>
             Écouter la conversation
           </button>
-          <p>
-            {following
-              ? "Les répliques s’enchaînent jusqu’à la fin. Tu peux mettre en pause avec le lecteur."
-              : "Lance la conversation à partir de cette réplique, ou écoute seulement celle-ci avec le lecteur."}
-          </p>
-        </div>
-      ) : (
-        <div className="scene-repeat-settings">
-          <label htmlFor={`${id}-repetitions`}>Nombre d’écoutes</label>
-          <select
-            id={`${id}-repetitions`}
-            value={repetitions}
-            onChange={(event) => {
-              cancelQueue();
-              setRepetitions(Number(event.target.value));
-            }}
-          >
-            {[3, 5].map((value) => (
-              <option value={value} key={value}>
-                {value} écoutes
-              </option>
-            ))}
-          </select>
-          <label htmlFor={`${id}-gap`}>Silence pour répéter</label>
-          <select
-            id={`${id}-gap`}
-            value={gapSeconds}
-            onChange={(event) => {
-              cancelQueue();
-              setGapSeconds(Number(event.target.value));
-            }}
-          >
-            {[2, 4, 6].map((value) => (
-              <option value={value} key={value}>
-                {value} secondes
-              </option>
-            ))}
-          </select>
-        </div>
+        )}
+        <AudioPlayer
+          fixedVoiceId={sceneVoiceIds[line.speakerId]}
+          source={{
+            kind: "scene",
+            sceneId: scene.id,
+            variantId: scene.variantId,
+            version: scene.version,
+            lineId: line.id,
+          }}
+          text={line.ukrainian}
+          controllerRef={player}
+          mode={mode === "repeat" ? "repeat" : "listen"}
+          repetitions={repetitions}
+          gapSeconds={gapSeconds}
+          initialRate={rate}
+          onRateChange={setRate}
+          onPhaseChange={onPhaseChange}
+          onComplete={onComplete}
+          onInterrupt={cancelQueue}
+        />
+      </div>
+      <p className="scene-listening-hint">
+        {mode === "repeat"
+          ? `Réplique ${index + 1}/${scene.lines.length} : écoute-la, puis répète-la à voix haute pendant chaque silence.`
+          : following
+            ? "Les répliques s’enchaînent jusqu’à la fin. Tu peux mettre en pause avec le lecteur."
+            : "Lance la conversation à partir de cette réplique, ou écoute seulement celle-ci avec le lecteur."}
+      </p>
+      {message && (
+        <p className="scene-listening-message" role="status">
+          {message}
+        </p>
       )}
-      <AudioPlayer
-        fixedVoiceId={sceneVoiceIds[line.speakerId]}
-        source={{
-          kind: "scene",
-          sceneId: scene.id,
-          variantId: scene.variantId,
-          version: scene.version,
-          lineId: line.id,
-        }}
-        text={line.ukrainian}
-        controllerRef={player}
-        mode={mode === "repeat" ? "repeat" : "listen"}
-        repetitions={repetitions}
-        gapSeconds={gapSeconds}
-        initialRate={rate}
-        onRateChange={setRate}
-        onPhaseChange={onPhaseChange}
-        onComplete={onComplete}
-        onInterrupt={cancelQueue}
-      />
-      {message && <p role="status">{message}</p>}
+      <p className="scene-listening-note">
+        Anna : voix féminine · Maxime : voix masculine. Voix de synthèse.
+      </p>
     </section>
   );
 }
