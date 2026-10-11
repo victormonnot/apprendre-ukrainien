@@ -526,6 +526,17 @@ test("separate accounts cannot read notes, review attempts, audio, backups or wr
         })
       ).status(),
     ).toBe(200);
+    const settings = await dataPost(a, baseURL, first, "/api/reviews", {
+      type: "set-daily-limit",
+      dailyNewLimit: null,
+    });
+    expect(settings.status()).toBe(200);
+    expect((await settings.json()).dailyNewLimit).toBeNull();
+    const pack = await dataPost(a, baseURL, first, "/api/reviews", {
+      type: "activate-pack",
+      packId: "module-02",
+    });
+    expect(pack.status()).toBe(200);
     const started = await dataPost(a, baseURL, first, "/api/reviews", {
       type: "start",
     });
@@ -536,6 +547,11 @@ test("separate accounts cannot read notes, review attempts, audio, backups or wr
       await dataGet(b, second, "/api/reviews")
     ).json()) as ReviewOverview;
     expect(otherReviews.selectedCount).toBe(0);
+    expect(otherReviews.dailyNewLimit).toBe(20);
+    expect(otherReviews.practiceAvailableCount).toBe(0);
+    expect(
+      otherReviews.packs.every((pack) => pack.activeElementCount === 0),
+    ).toBe(true);
     expect(otherReviews.active).toBeNull();
     await denied(
       await dataPost(b, baseURL, second, "/api/reviews", {

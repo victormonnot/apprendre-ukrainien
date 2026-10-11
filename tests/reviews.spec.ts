@@ -112,7 +112,7 @@ test.describe("native spaced reviews", () => {
     ).toBe(true);
     expect(initial.selectedCount).toBe(0);
     expect(initial.newToday).toBe(0);
-    expect(initial.dailyNewLimit).toBe(5);
+    expect(initial.dailyNewLimit).toBe(20);
     expect(initial.active).toBeNull();
     expect(initial.recent).toEqual([]);
 
@@ -468,6 +468,10 @@ test.describe("native spaced reviews", () => {
     request,
     baseURL,
   }) => {
+    await update(request, baseURL, {
+      type: "set-daily-limit",
+      dailyNewLimit: 5,
+    });
     for (const elementId of ["01-lettre-a", "01-lettre-m"]) {
       await update(request, baseURL, { type: "activate", elementId });
       const attempt = (await update(request, baseURL, { type: "start" }))
@@ -501,9 +505,7 @@ test.describe("native spaced reviews", () => {
     await page.goto(reviewsPath);
     await expect(activeCard(page)).toHaveCount(0);
     await expect(
-      page
-        .getByText(/5 nouvelles cartes au maximum par jour ; 5 déjà présentées/)
-        .first(),
+      page.getByText(/5 nouvelles cartes déjà présentées aujourd’hui/).first(),
     ).toBeVisible();
     await expect(element(page, "01-lettre-t")).toContainText("Т т");
   });

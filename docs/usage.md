@@ -95,10 +95,13 @@ your local answers alongside the saved version so you can recover them.
 
 ## Spaced reviews
 
-Open **Révisions** and add letters, words or expressions you have already studied.
-Adding an element activates its cards: recognition for letters, comprehension
-and production for words and expressions. Adding it again creates no duplicate
-and does not reset its schedule. Links lead back to the relevant course passage.
+Open **Révisions** and add a module pack, or choose individual letters, words or
+expressions you have already studied. Module 01 contains 50 cards and module 02
+contains 35. **Ajouter le pack** activates the whole module in one action;
+**Compléter le pack** adds missing elements and reactivates paused ones. Adding a
+pack again creates no duplicates and preserves all existing schedules and history.
+Cards cover recognition for letters, comprehension and production for words and
+expressions. Links lead back to the relevant course passage.
 
 The module filter helps you choose elements. The review session includes all
 modules you have activated. A new course module does not activate cards or change
@@ -128,9 +131,11 @@ does not create another review.
 
 The current scheduling rules are:
 
-- Started cards take priority over new cards. At most **five new cards per day**
-  can be introduced, using **Europe/Paris** days, including daylight-saving
-  changes. The first presentation reserves a place in that daily allowance.
+- Started cards take priority over new cards. The default allowance is **20 new
+  cards per day**; choose 5, 10, 20, 50 or **Sans limite** in Révisions. This setting
+  is saved for your account. Days use **Europe/Paris**, including daylight-saving
+  changes. The first scheduled presentation reserves a place in the allowance.
+  Changing it does not reset the number already introduced today.
 - After you rate a card, other cards for the same element wait until at least
   the next day. The card you just rated can return sooner. Other due cards remain
   available when the new-card allowance is reached.
@@ -142,6 +147,26 @@ The current scheduling rules are:
 Finish an element’s active card before choosing **Mettre en pause**. Pausing
 keeps its history and due dates; **Réactiver** resumes that state. The application
 does not import course progress or synchronize with Anki.
+
+### Continuous practice
+
+Choose **Entraînement libre** to keep practicing, including after the scheduled
+queue is empty. Due reviews and new cards within your allowance take priority;
+otherwise, the app draws from your active cards. Forgotten and difficult cards
+return sooner; successful recalls space the next practice appearances farther
+apart. The gaps shown on practice ratings are indicative and adapt to the number
+of active cards. With only one active element, it can return immediately.
+
+Extra practice keeps its own history and does not change scheduled due dates,
+FSRS memory estimates or the daily new-card allowance. It is not evidence of
+long-term mastery. The history and backup summary distinguish practice from
+scheduled reviews. The card, saved answer and adaptive practice order survive a
+reload or server restart. **Terminer après cette carte** stops the sequence after
+saving the current rating. You can start another session whenever you want.
+
+This separation follows the same purpose as Anki’s optional
+[custom study without rescheduling](https://docs.ankiweb.net/manual/filtered-decks#rescheduling);
+it does not reproduce Anki’s full filtered-deck system.
 
 ## Language workshop
 

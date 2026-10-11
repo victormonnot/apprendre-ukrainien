@@ -27,6 +27,7 @@ import { rehypeUkrainianLanguage } from "@/lib/markdown";
 import "./review-workspace.css";
 
 type LocalDraft = { attemptId: string; answerText: string };
+type SessionMode = "scheduled" | "continuous" | "finish";
 type RequestFailure = {
   message: string;
   conflict: boolean;
@@ -34,6 +35,7 @@ type RequestFailure = {
 };
 
 const draftPrefix = "ukrainian-review-draft:";
+const sessionModeKey = "ukrainian-review-session-mode";
 const groups = [
   { kind: "letter", title: "Les lettres" },
   { kind: "word", title: "Les mots" },
@@ -114,6 +116,8 @@ function ReviewWorkspaceContent({
   const [notice, setNotice] = useState("");
   const [storageWarning, setStorageWarning] = useState(false);
   const [reload, setReload] = useState(0);
+  const [sessionMode, setSessionMode] = useState<SessionMode>("scheduled");
+  const currentSessionMode = useRef<SessionMode>("scheduled");
   const requestLock = useRef(false);
   const requestVersion = useRef(0);
   const memoryDrafts = useRef(new Map<string, string>());
@@ -128,6 +132,10 @@ function ReviewWorkspaceContent({
     overview?.elements.filter(
       (element) => moduleId === "all" || element.moduleId === moduleId,
     ) ?? [];
+  const shownPacks =
+    overview?.packs.filter(
+      (pack) => moduleId === "all" || pack.moduleId === moduleId,
+    ) ?? [];
   const revealed = active?.revealed;
   const activeId = active?.id;
   const activeStatus = active?.status;
@@ -135,6 +143,19 @@ function ReviewWorkspaceContent({
   const disabled = busy || loading || unresolved;
   const dirty = active?.status === "presented" && answerText.length > 0;
   useUnsavedWork(Boolean(dirty));
+
+  const chooseSessionMode = useCallback(
+    (mode: SessionMode) => {
+      currentSessionMode.current = mode;
+      setSessionMode(mode);
+      try {
+        storage.setItem(sessionModeKey, mode);
+      } catch {
+        setStorageWarning(true);
+      }
+    },
+    [storage],
+  );
 
   const applyOverview = useCallback(
     (next: ReviewOverview) => {
@@ -191,6 +212,21 @@ function ReviewWorkspaceContent({
       .then((next) => {
         if (controller.signal.aborted || version !== requestVersion.current)
           return;
+        try {
+          const saved = storage.getItem(sessionModeKey);
+          if (
+            saved === "continuous" ||
+            saved === "finish" ||
+            saved === "scheduled"
+          ) {
+            currentSessionMode.current = saved;
+            setSessionMode(saved);
+          } else if (next.active?.mode === "practice") {
+            chooseSessionMode("continuous");
+          }
+        } catch {
+          setStorageWarning(true);
+        }
         applyOverview(next);
         setFailure(null);
       })
@@ -216,7 +252,7 @@ function ReviewWorkspaceContent({
       // Leaving the page must not reserve another card after an in-flight rating.
       requestVersion.current += 1;
     };
-  }, [reload, applyOverview]);
+  }, [reload, applyOverview, chooseSessionMode, storage]);
 
   useEffect(() => {
     if (activeStatus === "revealed") answerHeading.current?.focus();
@@ -277,19 +313,34 @@ function ReviewWorkspaceContent({
         );
         setNotice(
           review
-            ? `Révision enregistrée : ${reviewRatingLabels[review.rating]}. Prochain passage le ${fullDate(review.dueAt, next.timeZone)}.`
+            ? review.mode === "practice"
+              ? `Entraînement enregistré : ${reviewRatingLabels[review.rating]}. Ton calendrier de révision est conservé.`
+              : `Révision enregistrée : ${reviewRatingLabels[review.rating]}.${review.dueAt ? ` Prochain passage le ${fullDate(review.dueAt, next.timeZone)}.` : ""}`
             : "Révision enregistrée.",
         );
-        if (!next.active && next.eligibleCount > 0) {
+        const continuePractice =
+          currentSessionMode.current === "continuous" &&
+          next.practiceAvailableCount > 0;
+        const continueScheduled =
+          currentSessionMode.current === "scheduled" && next.eligibleCount > 0;
+        if (!next.active && (continuePractice || continueScheduled)) {
           // Keep the card on screen and the request lock until the next one is ready.
           // A failed continuation must retry start, never an already confirmed rating.
           confirmedRating = next;
-          pendingCommand = { type: "start" };
+          pendingCommand = {
+            type: continuePractice ? "start-practice" : "start",
+          };
           next = await updateReviews(pendingCommand);
           if (version !== requestVersion.current) return;
         }
       } else if (command.type === "activate") {
         setNotice("Cet élément est ajouté à tes révisions actives.");
+      } else if (command.type === "activate-pack") {
+        setNotice(
+          "Pack ajouté à tes révisions. Les cartes déjà présentes gardent leur historique.",
+        );
+      } else if (command.type === "set-daily-limit") {
+        setNotice("Ton rythme de nouvelles cartes a été enregistré.");
       } else if (command.type === "suspend") {
         setNotice("Élément mis en pause. Son historique est conservé.");
       }
@@ -381,8 +432,9 @@ function ReviewWorkspaceContent({
       )}
       {storageWarning && (
         <p className="review-warning" role="alert">
-          Le navigateur ne peut pas conserver ton brouillon dans cet onglet.
-          Copie ta réponse avant de quitter ou d’actualiser la page.
+          Le navigateur ne peut pas conserver tes préférences ou ton brouillon
+          dans cet onglet. Copie ta réponse avant de quitter ou d’actualiser la
+          page.
         </p>
       )}
       {recovered.length > 0 && (
@@ -423,6 +475,39 @@ function ReviewWorkspaceContent({
           aria-label="Carte de révision"
           data-review-attempt-id={active.id}
         >
+          <div className="review-session-mode">
+            <span>
+              {active.mode === "practice"
+                ? "Entraînement libre"
+                : "Révision prévue"}
+              {sessionMode === "continuous" && " · En continu"}
+            </span>
+            <button
+              type="button"
+              className="button button-secondary"
+              disabled={disabled}
+              onClick={() =>
+                chooseSessionMode(
+                  sessionMode === "finish" ? "continuous" : "finish",
+                )
+              }
+            >
+              {sessionMode === "finish"
+                ? "Continuer après cette carte"
+                : "Terminer après cette carte"}
+            </button>
+          </div>
+          {sessionMode === "finish" && (
+            <p className="review-hint" role="status">
+              La session se terminera après le bilan de cette carte.
+            </p>
+          )}
+          {active.mode === "practice" && (
+            <p className="review-hint">
+              Les cartes difficiles reviennent plus souvent. Cet entraînement
+              conserve les dates de tes révisions prévues.
+            </p>
+          )}
           <p className="eyebrow">{reviewDirectionLabels[active.direction]}</p>
           <h2 ref={cardHeading} tabIndex={-1}>
             {active.prompt}
@@ -527,12 +612,19 @@ function ReviewWorkspaceContent({
                     >
                       <strong>{reviewRatingLabels[option.rating]}</strong>
                       <span>{ratingDescriptions[option.rating]}</span>
-                      <time
-                        dateTime={option.dueAt}
-                        title={fullDate(option.dueAt, overview.timeZone)}
-                      >
-                        {intervalLabel(option.dueAt, overview.now)}
-                      </time>
+                      {option.dueAt ? (
+                        <time
+                          dateTime={option.dueAt}
+                          title={fullDate(option.dueAt, overview.timeZone)}
+                        >
+                          {intervalLabel(option.dueAt, overview.now)}
+                        </time>
+                      ) : (
+                        <span className="review-practice-gap">
+                          Après environ {option.practiceGap ?? 1} carte
+                          {(option.practiceGap ?? 1) > 1 ? "s" : ""}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -578,14 +670,37 @@ function ReviewWorkspaceContent({
               </div>
             </dl>
             <p>
-              {overview.dailyNewLimit} nouvelles cartes au maximum par jour ;{" "}
-              {overview.newToday} déjà présentée
+              {overview.newToday} nouvelle{overview.newToday > 1 ? "s" : ""}{" "}
+              carte{overview.newToday > 1 ? "s" : ""} déjà présentée
               {overview.newToday > 1 ? "s" : ""} aujourd’hui. Les cartes à
               revoir passent en premier.
             </p>
+            <label className="review-daily-limit">
+              Nouvelles cartes par jour
+              <select
+                value={overview.dailyNewLimit ?? "unlimited"}
+                disabled={disabled}
+                onChange={(event) =>
+                  void send({
+                    type: "set-daily-limit",
+                    dailyNewLimit:
+                      event.target.value === "unlimited"
+                        ? null
+                        : Number(event.target.value),
+                  })
+                }
+              >
+                {[5, 10, 20, 50].map((limit) => (
+                  <option key={limit} value={limit}>
+                    {limit}
+                  </option>
+                ))}
+                <option value="unlimited">Sans limite</option>
+              </select>
+            </label>
             {overview.nextAvailableAt && overview.eligibleCount === 0 && (
               <p>
-                Prochaine disponibilité :{" "}
+                Prochaine révision prévue :{" "}
                 <time dateTime={overview.nextAvailableAt}>
                   {fullDate(overview.nextAvailableAt, overview.timeZone)}
                 </time>
@@ -598,9 +713,27 @@ function ReviewWorkspaceContent({
                   type="button"
                   className="button button-primary"
                   disabled={disabled}
-                  onClick={() => void send({ type: "start" })}
+                  onClick={() => {
+                    chooseSessionMode("scheduled");
+                    void send({ type: "start" });
+                  }}
                 >
                   {busy ? "Chargement…" : "Commencer les révisions"}
+                </button>
+              )}
+              {overview.practiceAvailableCount > 0 && (
+                <button
+                  type="button"
+                  className={`button ${overview.eligibleCount > 0 ? "button-secondary" : "button-primary"}`}
+                  disabled={disabled}
+                  onClick={() => {
+                    chooseSessionMode("continuous");
+                    void send({ type: "start-practice" });
+                  }}
+                >
+                  {overview.eligibleCount > 0
+                    ? "Entraînement libre"
+                    : "Continuer à m’entraîner"}
                 </button>
               )}
               <button
@@ -613,9 +746,11 @@ function ReviewWorkspaceContent({
               </button>
             </div>
             <p className="review-hint">
-              Les cartes disponibles s’enchaînent après chaque bilan. Horaires :{" "}
-              {overview.timeZone}. Une carte révélée reste à évaluer jusqu’à ton
-              prochain passage.
+              L’entraînement libre enchaîne tes cartes aussi longtemps que tu le
+              souhaites, avec des retours plus fréquents sur les difficultés.
+              Les révisions prévues passent en premier ; les passages
+              supplémentaires conservent leurs dates. Horaires :{" "}
+              {overview.timeZone}.
             </p>
           </section>
           <section
@@ -644,9 +779,9 @@ function ReviewWorkspaceContent({
               </Link>
             </div>
             <p>
-              Ajoute seulement les lettres, mots et formules que tu as étudiés.
-              Les mots et les formules se travaillent dans les deux sens. Une
-              pause conserve les passages précédents et les échéances.
+              Ajoute un pack correspondant à un cours étudié, puis ajuste les
+              cartes si besoin. Les mots et les formules se travaillent dans les
+              deux sens.
             </p>
             <label className="review-module-filter">
               Éléments à afficher
@@ -665,6 +800,55 @@ function ReviewWorkspaceContent({
             <p className="review-hint">
               Ce filtre sert à choisir les éléments à ajouter. Tes révisions
               continuent à réunir toutes tes cartes actives.
+            </p>
+            <section
+              className="review-packs"
+              aria-labelledby="review-packs-title"
+            >
+              <h3 id="review-packs-title">Les packs de cours</h3>
+              <ul className="review-pack-list">
+                {shownPacks.map((pack) => {
+                  const complete =
+                    pack.activeElementCount === pack.elementCount;
+                  const action = complete
+                    ? "Pack ajouté"
+                    : pack.activeElementCount > 0
+                      ? "Compléter le pack"
+                      : "Ajouter le pack";
+                  return (
+                    <li key={pack.id} data-review-pack-id={pack.id}>
+                      <div>
+                        <p className="eyebrow">Module {pack.moduleId}</p>
+                        <h4>{pack.title}</h4>
+                        <p>{pack.description}</p>
+                        <p className="review-hint">
+                          {pack.cardCount} cartes · {pack.activeElementCount}/
+                          {pack.elementCount} éléments actifs
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className={`button ${complete ? "button-secondary" : "button-primary"}`}
+                        aria-label={`${action} : ${pack.title}`}
+                        disabled={disabled || complete}
+                        onClick={() =>
+                          void send({ type: "activate-pack", packId: pack.id })
+                        }
+                      >
+                        {action}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="review-hint">
+                Ajouter un pack active toutes ses cartes, y compris celles en
+                pause, sans doublon ni remise à zéro de ton historique.
+              </p>
+            </section>
+            <h3 className="review-individual-title">Ajuster carte par carte</h3>
+            <p className="review-hint">
+              Une pause conserve les passages précédents et les échéances.
             </p>
             {groups
               .filter((group) =>
@@ -755,6 +939,9 @@ function ReviewWorkspaceContent({
                       <summary>
                         <span lang="uk">{entry.label}</span>
                         <span>{reviewRatingLabels[entry.rating]}</span>
+                        {entry.mode === "practice" && (
+                          <span>Entraînement libre</span>
+                        )}
                         <time dateTime={entry.reviewedAt}>
                           {fullDate(entry.reviewedAt, overview.timeZone)}
                         </time>
@@ -765,13 +952,20 @@ function ReviewWorkspaceContent({
                         <p className="review-original-text">
                           {entry.answerText || "Aucune saisie enregistrée."}
                         </p>
-                        <p>
-                          Échéance fixée après ce passage :{" "}
-                          <time dateTime={entry.dueAt}>
-                            {fullDate(entry.dueAt, overview.timeZone)}
-                          </time>
-                          .
-                        </p>
+                        {entry.dueAt ? (
+                          <p>
+                            Échéance fixée après ce passage :{" "}
+                            <time dateTime={entry.dueAt}>
+                              {fullDate(entry.dueAt, overview.timeZone)}
+                            </time>
+                            .
+                          </p>
+                        ) : (
+                          <p>
+                            Entraînement libre : calendrier de révision
+                            conservé.
+                          </p>
+                        )}
                       </div>
                     </details>
                   </li>

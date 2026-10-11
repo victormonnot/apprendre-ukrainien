@@ -81,6 +81,7 @@ const summaryLabels: [keyof BackupSummary, string][] = [
   ["submittedExercises", "exercices remis"],
   ["activeCards", "cartes actives"],
   ["reviewAttempts", "évaluations de révision"],
+  ["practiceAttempts", "passages en entraînement libre"],
   ["savedLanguageItems", "fiches de l’atelier"],
   ["audioClips", "sons conservés"],
   ["sceneAttempts", "essais au café"],

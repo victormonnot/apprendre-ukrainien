@@ -3,6 +3,7 @@ export type BackupSummary = {
   submittedExercises: number;
   activeCards: number;
   reviewAttempts: number;
+  practiceAttempts: number;
   savedLanguageItems: number;
   audioClips: number;
   audioBytes: number;

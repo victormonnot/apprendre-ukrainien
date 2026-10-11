@@ -18,6 +18,7 @@ function card(index: number, answerText?: string): ReviewAttemptView {
   const letter = letters[index]!;
   return {
     id: `attempt-${letter.id}`,
+    mode: "scheduled",
     cardId: `01-lettre-${letter.id}-recognition`,
     elementId: `01-lettre-${letter.id}`,
     direction: "recognition",
@@ -38,6 +39,7 @@ function card(index: number, answerText?: string): ReviewAttemptView {
             options: ["again", "hard", "good", "easy"].map((rating) => ({
               rating: rating as "again" | "hard" | "good" | "easy",
               dueAt,
+              practiceGap: null,
             })),
           },
   };
@@ -50,6 +52,7 @@ function history(
   const attempt = card(index);
   return {
     id: attempt.id,
+    mode: "scheduled",
     cardId: attempt.cardId,
     elementId: attempt.elementId,
     label: attempt.cue,
@@ -76,6 +79,8 @@ function overview(
     reviewDueCount: 0,
     newAvailableCount: remaining,
     selectedCount: letters.length,
+    practiceAvailableCount: 0,
+    packs: [],
     nextAvailableAt: recent.length ? dueAt : null,
     elements: letters.map((letter) => ({
       id: `01-lettre-${letter.id}`,
@@ -297,10 +302,14 @@ test("stops at the daily limit without starting an ineligible card", async ({
     }),
   ).toBeFocused();
   await expect(
-    page.getByText(
-      /5 nouvelles cartes au maximum par jour ; 5 déjà présentées/,
-    ),
+    page.getByText(/5 nouvelles cartes déjà présentées aujourd’hui/),
   ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", {
+      name: "Nouvelles cartes par jour",
+      exact: true,
+    }),
+  ).toHaveValue("5");
   expect(commands).toEqual([rate(0)]);
 });
 
@@ -337,4 +346,144 @@ test("does not start another card after leaving while the rating is in flight", 
     page.getByRole("heading", { name: "Prêt pour un rappel ?" }),
   ).toBeVisible();
   expect(commands).toEqual([rate(0)]);
+});
+
+function practiceCard(index: number, answerText?: string): ReviewAttemptView {
+  const attempt = card(index, answerText);
+  return {
+    ...attempt,
+    mode: "practice",
+    revealed: attempt.revealed
+      ? {
+          ...attempt.revealed,
+          options: attempt.revealed.options.map((option, order) => ({
+            rating: option.rating,
+            dueAt: null,
+            practiceGap: [1, 3, 6, 12][order]!,
+          })),
+        }
+      : null,
+  };
+}
+
+function practiceHistory(index: number): ReviewHistoryEntry {
+  return { ...history(index), mode: "practice", dueAt: null };
+}
+
+function practiceOverview(
+  active: ReviewAttemptView | null,
+  recent: ReviewHistoryEntry[] = [],
+) {
+  return overview(active, recent, {
+    newToday: 5,
+    eligibleCount: 0,
+    reviewDueCount: 0,
+    newAvailableCount: 0,
+    practiceAvailableCount: letters.length,
+  });
+}
+
+test("retries a lost practice rating exactly, resumes after reload and stops after the chosen card", async ({
+  page,
+}) => {
+  const firstRated = practiceOverview(null, [practiceHistory(0)]);
+  const secondPresented = practiceOverview(practiceCard(1), [
+    practiceHistory(0),
+  ]);
+  const replies: Reply[] = [
+    {
+      command: { type: "start-practice" },
+      state: practiceOverview(practiceCard(0)),
+    },
+    {
+      command: reveal(0, "a"),
+      state: practiceOverview(practiceCard(0, "a")),
+    },
+    { command: rate(0), state: firstRated, fail: "lost-response" },
+    { command: rate(0), state: firstRated },
+    { command: { type: "start-practice" }, state: secondPresented },
+    {
+      command: reveal(1, "m"),
+      state: practiceOverview(practiceCard(1, "m"), [practiceHistory(0)]),
+    },
+    {
+      command: rate(1),
+      state: practiceOverview(null, [practiceHistory(1), practiceHistory(0)]),
+    },
+  ];
+  const commands = await mockReviews(page, practiceOverview(null), replies);
+  await page.goto("/revisions");
+  await page
+    .getByRole("button", { name: "Continuer à m’entraîner", exact: true })
+    .click();
+  await answerAndReveal(page, "a");
+  await activeCard(page).getByRole("button", { name: /^Bien/ }).click();
+  await expect(page.locator(".review-error[role=alert]")).toContainText(
+    "injoignable",
+  );
+  await expect(
+    activeCard(page).getByRole("button", { name: /^Bien/ }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: /Réessayer/ }).click();
+  await expect(activeCard(page)).toHaveAttribute(
+    "data-review-attempt-id",
+    card(1).id,
+  );
+  await page.reload();
+  await expect(activeCard(page)).toHaveAttribute(
+    "data-review-attempt-id",
+    card(1).id,
+  );
+  await activeCard(page)
+    .getByRole("button", { name: "Terminer après cette carte", exact: true })
+    .click();
+  await answerAndReveal(page, "m");
+  await activeCard(page).getByRole("button", { name: /^Bien/ }).click();
+  await expect(activeCard(page)).toHaveCount(0);
+  await expect(page.locator(".review-history-list > li")).toHaveCount(2);
+  await expect(
+    page.getByRole("button", {
+      name: "Continuer à m’entraîner",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(commands).toEqual(replies.map((reply) => reply.command));
+});
+
+test("retries only start-practice when the next practice card fails to load", async ({
+  page,
+}) => {
+  const rated = practiceOverview(null, [practiceHistory(0)]);
+  const replies: Reply[] = [
+    {
+      command: { type: "start-practice" },
+      state: practiceOverview(practiceCard(0)),
+    },
+    {
+      command: reveal(0, "a"),
+      state: practiceOverview(practiceCard(0, "a")),
+    },
+    { command: rate(0), state: rated },
+    { command: { type: "start-practice" }, state: rated, fail: "unavailable" },
+    {
+      command: { type: "start-practice" },
+      state: practiceOverview(practiceCard(1), [practiceHistory(0)]),
+    },
+  ];
+  const commands = await mockReviews(page, practiceOverview(null), replies);
+  await page.goto("/revisions");
+  await page
+    .getByRole("button", { name: "Continuer à m’entraîner", exact: true })
+    .click();
+  await answerAndReveal(page, "a");
+  await activeCard(page).getByRole("button", { name: /^Bien/ }).click();
+  await expect(page.locator(".review-error[role=alert]")).toBeVisible();
+  await expect(activeCard(page)).toHaveCount(0);
+  await expect(page.locator(".review-history-list > li")).toHaveCount(1);
+  await page.getByRole("button", { name: /Réessayer/ }).click();
+  await expect(activeCard(page)).toHaveAttribute(
+    "data-review-attempt-id",
+    card(1).id,
+  );
+  expect(commands).toEqual(replies.map((reply) => reply.command));
 });

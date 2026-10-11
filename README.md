@@ -20,7 +20,8 @@ line or write one character's replies. The interface and explanations are in Fre
 - **Courses, vocabulary and exercises** with notes, saved answers and printable
   pages. The two modules cover reading Cyrillic, introductions and simple sentences.
 - **Spaced reviews** for the letters, words and phrases you choose to practise.
-  Reveal the answer, rate your recall and the app schedules the next review.
+  Add a module pack, reveal the answer and rate your recall. Adjust the daily
+  allowance or keep practicing with adaptive repeats after scheduled reviews.
 - **A language workshop** to search the course material and save useful phrases.
   Optional AI tools help translate, explain a passage or review a written answer.
 - **Listening and dialogue practice** with an audio studio, the café scenes and

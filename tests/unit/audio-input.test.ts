@@ -131,6 +131,7 @@ test("audio of a review is available only for the revealed snapshot, without rev
   const source = { kind: "review" as const, attemptId: "attempt" };
   const active: ReviewAttemptView = {
     id: "attempt",
+    mode: "scheduled",
     cardId: "card",
     elementId: "01-mot-kava",
     definitionVersion: 1,
@@ -160,6 +161,21 @@ test("audio of a review is available only for the revealed snapshot, without rev
   };
   assert.equal(
     resolveAudioText(source, { ...context, getActiveReview: () => revealed }),
+    "кава",
+  );
+  assert.throws(
+    () =>
+      resolveAudioText(source, {
+        ...context,
+        getActiveReview: () => ({ ...active, mode: "practice" }),
+      }),
+    AudioInputError,
+  );
+  assert.equal(
+    resolveAudioText(source, {
+      ...context,
+      getActiveReview: () => ({ ...revealed, mode: "practice" }),
+    }),
     "кава",
   );
   assert.throws(

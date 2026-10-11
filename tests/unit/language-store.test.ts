@@ -19,6 +19,7 @@ import {
 } from "../../src/lib/server/language-store.ts";
 import { openLearningStore } from "../../src/lib/server/learning-store.ts";
 import { openReviewStore } from "../../src/lib/server/review-store.ts";
+import { seedLegacyRevealedReview } from "../helpers/legacy-review.ts";
 
 const input: LanguageInput = {
   mode: "translate",
@@ -381,12 +382,29 @@ test("migration four preserves previous notes, exercise answers, active reviews 
   const exercises = openExerciseStore(context.directory, options);
   const draft = exercises.startAttempt(userId, getExercise("01-1")!);
   exercises.close();
-  const reviews = openReviewStore(context.directory, options);
-  reviews.activateElement(userId, "01-mot-kava");
-  const attempt = reviews.startReview(userId).active!;
-  const review = reviews.revealAnswer(userId, attempt.id, "Mon rappel réel");
-  reviews.close();
   const database = context.inspect();
+  const review = seedLegacyRevealedReview(
+    database,
+    userId,
+    context.now(),
+    "Mon rappel réel",
+  );
+  const reviewSnapshots = [
+    "review_elements",
+    "review_cards",
+    "review_attempts",
+  ].map((table) => {
+    const columns = database
+      .prepare(`PRAGMA table_info("${table}")`)
+      .all()
+      .map((column) => `"${column.name}"`)
+      .join(", ");
+    return {
+      table,
+      columns,
+      rows: database.prepare(`SELECT ${columns} FROM "${table}"`).all(),
+    };
+  });
   const events = ["learning_events", "exercise_events", "review_events"].map(
     (table) => ({
       table,
@@ -409,8 +427,21 @@ test("migration four preserves previous notes, exercise answers, active reviews 
   const upgradedReviews = openReviewStore(context.directory, {
     now: context.now,
   });
-  assert.deepEqual(upgradedReviews.getOverview(userId), review);
+  const active = upgradedReviews.getOverview(userId).active!;
+  assert.equal(active.id, review.attemptId);
+  assert.equal(active.cardId, review.cardId);
+  assert.equal(active.answerText, review.answerText);
+  assert.equal(active.status, "revealed");
+  assert.equal(active.mode, "scheduled");
+  assert.ok(active.revealed);
   upgradedReviews.close();
+  for (const { table, columns, rows } of reviewSnapshots) {
+    assert.deepEqual(
+      database.prepare(`SELECT ${columns} FROM "${table}"`).all(),
+      rows,
+      `${table} must be preserved`,
+    );
+  }
   for (const { table, rows } of events) {
     assert.deepEqual(
       database.prepare(`SELECT * FROM ${table} ORDER BY id`).all(),
@@ -420,6 +451,6 @@ test("migration four preserves previous notes, exercise answers, active reviews 
   assert.equal(
     database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
       .count,
-    9,
+    10,
   );
 });

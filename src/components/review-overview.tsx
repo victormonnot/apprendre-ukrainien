@@ -46,9 +46,9 @@ function ReviewOverviewContent() {
                 : overview.eligibleCount > 0
                   ? `${overview.eligibleCount} carte${overview.eligibleCount > 1 ? "s" : ""} disponible${overview.eligibleCount > 1 ? "s" : ""} pour tes révisions.`
                   : !overview.elements.some((element) => element.selected)
-                    ? "Ajoute les mots, expressions et lettres que tu souhaites retenir."
-                    : overview.nextAvailableAt
-                      ? `Prochaine disponibilité : ${new Intl.DateTimeFormat("fr-FR", { timeZone: overview.timeZone, dateStyle: "medium", timeStyle: "short" }).format(new Date(overview.nextAvailableAt))} (heure de Paris).`
+                    ? "Ajoute un pack de cours pour retrouver ses mots, expressions et lettres."
+                    : overview.practiceAvailableCount > 0
+                      ? "Tes révisions sont à jour. Tu peux continuer en entraînement libre."
                       : "Les éléments ajoutés sont en pause."}
         </p>
       </div>

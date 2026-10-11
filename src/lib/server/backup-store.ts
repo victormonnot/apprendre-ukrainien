@@ -38,6 +38,7 @@ type SchemaObject = {
 const tables = [
   "schema_migrations",
   "profiles",
+  "review_settings",
   "document_progress",
   "document_notes",
   "learning_events",
@@ -45,6 +46,7 @@ const tables = [
   "exercise_events",
   "review_elements",
   "review_cards",
+  "review_practice_cards",
   "review_attempts",
   "review_events",
   "language_results",
@@ -107,7 +109,10 @@ function summary(database: DatabaseSync): BackupSummary {
       "SELECT count(*) AS value FROM review_cards c JOIN review_elements e ON e.user_id = c.user_id AND e.element_id = c.element_id WHERE e.active = 1",
     ),
     reviewAttempts: count(
-      "SELECT count(*) AS value FROM review_attempts WHERE status = 'rated'",
+      "SELECT count(*) AS value FROM review_attempts WHERE status = 'rated' AND mode = 'scheduled'",
+    ),
+    practiceAttempts: count(
+      "SELECT count(*) AS value FROM review_attempts WHERE status = 'rated' AND mode = 'practice'",
     ),
     savedLanguageItems: count(
       "SELECT (SELECT count(*) FROM language_results WHERE saved_at IS NOT NULL) + (SELECT count(*) FROM language_saved_references) AS value",

@@ -294,6 +294,45 @@ test("overview does not create a profile and exports use private paths", (t) => 
   );
 });
 
+test("restore preserves review settings, adaptive practice and a revealed practice card", (t) => {
+  const context = fixture(t);
+  const userId = context.profile();
+  const reviews = context.track(
+    openReviewStore(context.directory, { now: context.now }),
+  );
+  reviews.setDailyLimit(userId, null);
+  reviews.activateElement(userId, "01-mot-kava");
+  const scheduled = reviews.startReview(userId).active!;
+  reviews.revealAnswer(userId, scheduled.id, "café");
+  reviews.rateReview(userId, scheduled.id, "easy");
+  const practice = reviews.startPractice(userId).active!;
+  assert.equal(practice.mode, "practice");
+  reviews.revealAnswer(userId, practice.id, "entraînement");
+  reviews.rateReview(userId, practice.id, "hard");
+  const next = reviews.startPractice(userId).active!;
+  reviews.revealAnswer(userId, next.id, "à conserver");
+
+  const store = context.open();
+  const database = context.database();
+  const before = snapshot(database);
+  const overview = reviews.getOverview(userId);
+  const file = store.createBackup();
+  const inspection = store.inspectBackup(store.readBackup(file.id).bytes);
+  assert.equal(inspection.summary.reviewAttempts, 1);
+  assert.equal(inspection.summary.practiceAttempts, 1);
+
+  reviews.rateReview(userId, next.id, "good");
+  reviews.setDailyLimit(userId, 5);
+  reviews.activateElement(userId, "01-lettre-a");
+  store.restoreBackup(request(inspection, store.getOverview().generation));
+  assert.deepEqual(snapshot(database), before);
+  assert.deepEqual(reviews.getOverview(userId), overview);
+  const continued = reviews.rateReview(userId, next.id, "good");
+  assert.equal(continued.recent[0]!.mode, "practice");
+  assert.equal(store.getOverview().current.reviewAttempts, 1);
+  assert.equal(store.getOverview().current.practiceAttempts, 2);
+});
+
 test("snapshot and restore preserve every domain, raw rows, sequence values and open store connections", (t) => {
   const context = fixture(t);
   const domain = seed(context);
@@ -306,6 +345,7 @@ test("snapshot and restore preserve every domain, raw rows, sequence values and 
     submittedExercises: 1,
     activeCards: 2,
     reviewAttempts: 1,
+    practiceAttempts: 0,
     savedLanguageItems: 2,
     audioClips: 1,
     audioBytes: 417,

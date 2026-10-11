@@ -1,6 +1,7 @@
 import { withAccount } from "@/lib/server/account-request";
 import {
   REVIEW_ANSWER_MAX_LENGTH,
+  REVIEW_DAILY_LIMITS,
   type ReviewCommand,
 } from "@/lib/review-types";
 import { getLearningStore } from "@/lib/server/learning-service";
@@ -27,14 +28,24 @@ function identifier(value: unknown): value is string {
 function validateCommand(body: Record<string, unknown>): ReviewCommand {
   const fields = {
     activate: ["type", "elementId"],
+    "activate-pack": ["type", "packId"],
+    "set-daily-limit": ["type", "dailyNewLimit"],
     suspend: ["type", "elementId"],
     start: ["type"],
+    "start-practice": ["type"],
     reveal: ["type", "attemptId", "answerText"],
     rate: ["type", "attemptId", "rating"],
   };
   if (typeof body.type !== "string" || !Object.hasOwn(fields, body.type))
     throw new RequestError("Cette action de révision est invalide.");
   const allowed = fields[body.type as keyof typeof fields];
+  if (body.type === "activate-pack" && !identifier(body.packId))
+    throw new RequestError("Le pack à réviser est invalide.");
+  if (
+    body.type === "set-daily-limit" &&
+    !(REVIEW_DAILY_LIMITS as readonly unknown[]).includes(body.dailyNewLimit)
+  )
+    throw new RequestError("La limite de nouvelles cartes est invalide.");
   if (
     Object.keys(body).length !== allowed.length ||
     Object.keys(body).some((key) => !allowed.includes(key))
@@ -106,10 +117,16 @@ async function handlePOST(request: Request) {
     switch (command.type) {
       case "activate":
         return json(store.activateElement(userId, command.elementId));
+      case "activate-pack":
+        return json(store.activatePack(userId, command.packId));
+      case "set-daily-limit":
+        return json(store.setDailyLimit(userId, command.dailyNewLimit));
       case "suspend":
         return json(store.suspendElement(userId, command.elementId));
       case "start":
         return json(store.startReview(userId));
+      case "start-practice":
+        return json(store.startPractice(userId));
       case "reveal":
         return json(
           store.revealAnswer(userId, command.attemptId, command.answerText),

@@ -14,7 +14,7 @@ import {
 import { openExerciseStore } from "../../src/lib/server/exercise-store.ts";
 import { openLanguageStore } from "../../src/lib/server/language-store.ts";
 import { openLearningStore } from "../../src/lib/server/learning-store.ts";
-import { openReviewStore } from "../../src/lib/server/review-store.ts";
+import { seedLegacyRevealedReview } from "../helpers/legacy-review.ts";
 
 const descriptor: AudioDescriptor = {
   text: "Добрий день!",
@@ -358,11 +358,12 @@ test("audio migrations preserve existing clips, learning data and migration chec
     const exercises = openExerciseStore(context.directory, options);
     exercises.startAttempt(userId, getExercise("01-1")!);
     exercises.close();
-    const reviews = openReviewStore(context.directory, options);
-    reviews.activateElement(userId, "01-mot-kava");
-    const active = reviews.startReview(userId).active!;
-    reviews.revealAnswer(userId, active.id, "Mon vrai rappel");
-    reviews.close();
+    seedLegacyRevealedReview(
+      context.inspect(),
+      userId,
+      context.now(),
+      "Mon vrai rappel",
+    );
     const language = openLanguageStore(context.directory, options);
     language.saveReference(userId, "01-mot-kava");
     const result = language.recordResult(userId, {
@@ -414,14 +415,22 @@ test("audio migrations preserve existing clips, learning data and migration chec
           "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations'",
         )
         .all() as { name: string }[]
-    ).map(({ name }) => ({
-      name,
-      rows: database.prepare(`SELECT * FROM ${name}`).all(),
-    }));
+    ).map(({ name }) => {
+      const columns = database
+        .prepare(`PRAGMA table_info("${name}")`)
+        .all()
+        .map((column) => `"${column.name}"`)
+        .join(", ");
+      return {
+        name,
+        columns,
+        rows: database.prepare(`SELECT ${columns} FROM "${name}"`).all(),
+      };
+    });
     const store = context.open();
-    for (const { name, rows } of snapshots) {
+    for (const { name, columns, rows } of snapshots) {
       assert.deepEqual(
-        database.prepare(`SELECT * FROM ${name}`).all(),
+        database.prepare(`SELECT ${columns} FROM "${name}"`).all(),
         rows,
         `${name} must be preserved`,
       );
@@ -437,7 +446,11 @@ test("audio migrations preserve existing clips, learning data and migration chec
     assert.equal(
       database.prepare("SELECT count(*) AS count FROM schema_migrations").get()!
         .count,
-      9,
+      10,
+    );
+    assert.equal(
+      database.prepare("SELECT mode FROM review_attempts").get()!.mode,
+      "scheduled",
     );
     const nova = store.saveClip(userId, novaDescriptor, wave(), "audio/wav");
     assert.equal(store.findClip(userId, novaDescriptor)!.id, nova.id);

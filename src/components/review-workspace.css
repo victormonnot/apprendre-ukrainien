@@ -44,6 +44,21 @@
 .review-card > h2 {
   font-size: clamp(1.3rem, 2.5vw, 1.7rem);
 }
+.review-session-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.review-session-mode .button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
 .review-workspace .review-cue {
   margin: 1.5rem 0;
   padding: 1.25rem;
@@ -164,7 +179,8 @@
   line-height: 1.45;
   color: var(--muted);
 }
-.review-rating time {
+.review-rating time,
+.review-rating .review-practice-gap {
   margin-top: auto;
   padding-top: 0.5rem;
   font-size: 0.875rem;
@@ -252,14 +268,16 @@
   margin: 0.35rem 0 0;
   font-size: 0.875rem;
 }
-.review-module-filter {
+.review-module-filter,
+.review-daily-limit {
   display: grid;
   gap: 0.45rem;
   margin-top: 1.25rem;
   font-size: 0.9375rem;
   font-weight: 600;
 }
-.review-module-filter select {
+.review-module-filter select,
+.review-daily-limit select {
   width: 100%;
   max-width: 34rem;
   min-width: 0;
@@ -269,6 +287,50 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
+}
+.review-daily-limit {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+.review-daily-limit select {
+  width: auto;
+  min-width: 7rem;
+}
+.review-packs {
+  margin-top: 1.8rem;
+}
+.review-pack-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+}
+.review-pack-list > li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--background);
+}
+.review-pack-list .eyebrow {
+  margin-top: 0;
+}
+.review-pack-list h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.review-pack-list p {
+  font-size: 0.875rem;
+}
+.review-individual-title {
+  margin-top: 2rem;
 }
 .review-group > h3 {
   padding-bottom: 0.6rem;
@@ -341,6 +403,9 @@
   font-size: 0.875rem;
 }
 @media (max-width: 760px) {
+  .review-pack-list {
+    grid-template-columns: 1fr;
+  }
   .review-rating-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

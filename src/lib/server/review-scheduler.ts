@@ -10,7 +10,7 @@ import {
 import type { ReviewRating } from "../review-types.ts";
 
 export const REVIEW_TIME_ZONE = "Europe/Paris";
-export const DAILY_NEW_LIMIT = 5;
+export const DAILY_NEW_LIMIT = 20;
 export const REVIEW_RATINGS: ReviewRating[] = ["again", "hard", "good", "easy"];
 
 const parameters = generatorParameters({
