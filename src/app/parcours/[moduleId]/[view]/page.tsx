@@ -56,7 +56,7 @@ export default async function CourseDocumentPage({ params }: PageProps) {
     <main id="main-content" className="page document-page" tabIndex={-1}>
       <div className="document-toolbar">
         <nav aria-label="Fil d’Ariane" className="breadcrumbs">
-          <Link href="/parcours">Parcours</Link>
+          <Link href="/parcours">Cours & fiches</Link>
           <span aria-hidden="true">/</span>
           <span>Module {module.id}</span>
         </nav>

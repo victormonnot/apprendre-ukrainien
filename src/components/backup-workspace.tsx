@@ -277,7 +277,7 @@ function BackupWorkspaceContent() {
               await acceptRestoredGeneration(restored.generation);
               // A full navigation drops all data and draft caches from the previous workspace.
               // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-              window.location.href = "/parcours";
+              window.location.href = "/";
             })
           }
         >

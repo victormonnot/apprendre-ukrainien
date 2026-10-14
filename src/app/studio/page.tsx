@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AudioStudio } from "@/components/audio-studio";
+import { ImmersionNav } from "@/components/immersion-nav";
 
 export const metadata: Metadata = { title: "Studio d’écoute" };
 
 export default function StudioPage() {
   return (
     <main id="main-content" className="page catalog-page" tabIndex={-1}>
+      <ImmersionNav />
       <header className="page-heading">
         <p className="eyebrow">Écouter et répéter</p>
         <h1>Mon studio d’écoute</h1>

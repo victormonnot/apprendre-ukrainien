@@ -14,6 +14,16 @@ For hosted access, see the [deployment guide](../deploy/README.md).
 
 ## Your personal workspace
 
+The home page gives direct access to six activities: **Révisions**, **Atelier**,
+**Le café**, **Studio d’écoute**, **Médiathèque** and **Cours & fiches**. Choose
+whichever you want to work on; reading a lesson is not a prerequisite to opening
+the other tools.
+
+The main menu keeps five entries. **Immersion** groups the café, audio studio and
+media library, with tabs to move between them. **Cours & fiches** groups courses,
+vocabulary and exercises. **Mes données** and account access sit below the main
+navigation. On mobile, use **Menu** to show or hide navigation.
+
 On a public installation with accounts enabled, you can browse the courses and
 catalogue without signing in. Choose **Créer un compte** to register with an
 identifier, a first name or nickname, and a password. Signing in gives you a
@@ -42,7 +52,7 @@ the access settings.
 
 ## Read, resume and keep notes
 
-Open **Parcours** and choose a module. Each has a course, a vocabulary sheet and
+Open **Cours & fiches** and choose a module. Each has a course, a vocabulary sheet and
 an exercise sheet, with a table of contents and an **Imprimer** button. Printed
 sheets omit your personal answers and corrections.
 

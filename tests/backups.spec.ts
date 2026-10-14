@@ -508,7 +508,7 @@ test.describe("local database backups and recovery", () => {
           exact: true,
         })
         .click();
-      await expect(page).toHaveURL(/\/parcours$/);
+      await expect(page).toHaveURL("/");
     } finally {
       await oldTab.close();
       await current?.dispose();

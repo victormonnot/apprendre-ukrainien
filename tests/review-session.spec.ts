@@ -327,9 +327,9 @@ test("does not start another card after leaving while the rating is in flight", 
   await activeCard(page).getByRole("button", { name: /^Bien/ }).click();
   await expect.poll(() => commands.length).toBe(1);
   await activeCard(page)
-    .getByRole("link", { name: "Revenir au parcours", exact: true })
+    .getByRole("link", { name: "Revenir à l’accueil", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/parcours$/);
+  await expect(page).toHaveURL("/");
   const rated = page.waitForResponse(
     (response) =>
       new URL(response.url()).pathname === "/api/reviews" &&
@@ -338,6 +338,7 @@ test("does not start another card after leaving while the rating is in flight", 
   releaseRating();
   await rated;
   await page
+    .getByRole("navigation", { name: "Choisir une activité" })
     .getByRole("link", { name: /révisions/i })
     .first()
     .click();

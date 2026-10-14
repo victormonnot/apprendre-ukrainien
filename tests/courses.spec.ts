@@ -36,11 +36,177 @@ async function exerciseSections(page: Page) {
   });
 }
 
+test("offers six activities from the home page and keeps the main menu compact on desktop and mobile", async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto("/");
+  await expect(page).toHaveURL("/");
+  const activities = page.getByRole("navigation", {
+    name: "Choisir une activité",
+    exact: true,
+  });
+  await expect(activities).toBeVisible();
+  expect(
+    await activities
+      .getByRole("link")
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href"))),
+  ).toEqual([
+    "/revisions",
+    "/atelier",
+    "/cafe",
+    "/studio",
+    "/ressources",
+    "/parcours",
+  ]);
+  for (const link of await activities.getByRole("link").all()) {
+    await expect(link).toBeVisible();
+  }
+
+  const navigation = page.getByRole("navigation", {
+    name: "Navigation principale",
+    exact: true,
+    includeHidden: true,
+  });
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if (isMobile) {
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(navigation).toBeHidden();
+    await menu.click();
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+  } else {
+    await expect(menu).toBeHidden();
+  }
+  await expect(navigation).toBeVisible();
+  expect(
+    await navigation
+      .getByRole("link")
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href"))),
+  ).toEqual(["/", "/revisions", "/atelier", "/immersion", "/parcours"]);
+  await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
+  await expect(navigation.locator('a[href="/"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await navigation
+    .getByRole("link", { name: "Immersion", exact: true })
+    .click();
+  await expect(page).toHaveURL("/immersion");
+  if (isMobile) {
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(navigation).toBeHidden();
+  }
+  await page.locator(".brand").click();
+  await expect(page).toHaveURL("/");
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+  }));
+  expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport + 1);
+  expect(dimensions.body).toBeLessThanOrEqual(dimensions.viewport + 1);
+});
+
+test("keeps the menu and draft when navigation is cancelled, then closes it after leaving", async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto("/parcours/01/cours");
+  await page.getByText("Mon suivi et mes notes", { exact: true }).click();
+  const note = page.getByRole("textbox", {
+    name: "Ma note personnelle",
+    exact: true,
+  });
+  await expect(note).toBeEnabled();
+  await note.fill("Un brouillon conservé pendant la navigation.");
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  if (isMobile) await menu.click();
+  const navigation = page.getByRole("navigation", {
+    name: "Navigation principale",
+    exact: true,
+  });
+  const home = navigation.getByRole("link", { name: "Accueil", exact: true });
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await home.click();
+  await expect(page).toHaveURL("/parcours/01/cours");
+  await expect(navigation).toBeVisible();
+  await expect(note).toHaveValue(
+    "Un brouillon conservé pendant la navigation.",
+  );
+  if (isMobile) {
+    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await menu.focus();
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveAttribute("aria-expanded", "false");
+    await expect(menu).toBeFocused();
+    await menu.click();
+  }
+  page.once("dialog", (dialog) => dialog.accept());
+  await home.click();
+  await expect(page).toHaveURL("/");
+  if (isMobile) await expect(menu).toHaveAttribute("aria-expanded", "false");
+});
+
+test("groups the cafe, listening studio and media library under immersion while keeping their direct links", async ({
+  page,
+}) => {
+  await page.goto("/immersion");
+  await expect(
+    page.getByRole("heading", { name: "Immersion", exact: true, level: 1 }),
+  ).toBeVisible();
+  for (const href of ["/cafe", "/studio", "/ressources"]) {
+    await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+  }
+  await page.locator('main a[href="/cafe"]').first().click();
+
+  const localNavigation = page.getByRole("navigation", {
+    name: "Explorer l’immersion",
+    exact: true,
+  });
+  const mainNavigation = page.getByRole("navigation", {
+    name: "Navigation principale",
+    exact: true,
+    includeHidden: true,
+  });
+  for (const href of ["/cafe", "/studio", "/ressources"]) {
+    await localNavigation.locator(`a[href="${href}"]`).click();
+    await expect(page).toHaveURL(href);
+    await expect(localNavigation).toBeVisible();
+    await expect(localNavigation.locator('[aria-current="page"]')).toHaveCount(
+      1,
+    );
+    await expect(localNavigation.locator(`a[href="${href}"]`)).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(mainNavigation.locator('[aria-current="page"]')).toHaveCount(
+      1,
+    );
+    await expect(
+      mainNavigation.locator('a[href="/immersion"]'),
+    ).toHaveAttribute("aria-current", "page");
+  }
+  await page.goto("/ressources/ulp-001");
+  await expect(
+    localNavigation.locator('a[href="/ressources"]'),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(mainNavigation.locator('a[href="/immersion"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
 test("opens the module and moves between its three connected documents", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(page).toHaveURL("/");
+  await page.locator('main a[href="/parcours"]').click();
   await expect(page).toHaveURL("/parcours");
+  await expect(
+    page.getByRole("heading", { name: "Cours & fiches", exact: true }),
+  ).toBeVisible();
   await page
     .locator('[aria-labelledby="module-01"]')
     .getByRole("link", { name: "Ouvrir le cours", exact: true })
@@ -78,15 +244,15 @@ test("opens the next module and keeps vocabulary and exercise navigation in that
     .getByRole("link", { name: "Ouvrir le cours", exact: true })
     .click();
   await expect(page).toHaveURL("/parcours/02/cours");
-  const mainNavigation = page.getByRole("navigation", {
-    name: "Navigation principale",
+  const moduleNavigation = page.getByRole("navigation", {
+    name: "Supports du module",
     exact: true,
   });
   for (const document of documents.slice(1)) {
     await expect(
-      mainNavigation.getByRole("link", { name: document.label, exact: true }),
+      moduleNavigation.getByRole("link", { name: document.label, exact: true }),
     ).toHaveAttribute("href", `/parcours/02/${document.slug}`);
-    await mainNavigation
+    await moduleNavigation
       .getByRole("link", { name: document.label, exact: true })
       .click();
     await expect(page).toHaveURL(`/parcours/02/${document.slug}`);
@@ -299,6 +465,6 @@ test("returns a real 404 for an unknown module or document", async ({
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
     await expect(page.locator("article.prose")).toHaveCount(0);
     await page.getByRole("link", { name: /Revenir à l’accueil/ }).click();
-    await expect(page).toHaveURL("/parcours");
+    await expect(page).toHaveURL("/");
   }
 });

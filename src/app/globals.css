@@ -108,6 +108,34 @@ button {
   padding: 2rem 1.1rem;
   border-right: 1px solid var(--border);
   background: var(--surface);
+  overflow-y: auto;
+}
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.mobile-menu-toggle {
+  display: none;
+}
+.sidebar-navigation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 2.5rem;
+}
+.app-sidebar .sidebar-account {
+  margin-top: auto;
+  padding: 1.25rem 0.75rem 0;
+}
+.app-sidebar .sidebar-account a {
+  padding: 0.25rem 0;
+  color: var(--muted);
+}
+.app-sidebar .sidebar-account a:hover,
+.app-sidebar .sidebar-account a[aria-current="page"] {
+  color: var(--accent);
 }
 .brand {
   display: inline-flex;
@@ -131,15 +159,16 @@ button {
   color: white;
   font-size: 1.4rem;
 }
+.main-nav {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 2rem;
+}
 .nav-label {
   margin: 3rem 0.8rem 0.7rem;
   font-size: 0.875rem;
   font-weight: 650;
   color: var(--muted);
-}
-.main-nav {
-  display: grid;
-  gap: 0.35rem;
 }
 .main-nav a {
   display: flex;
@@ -164,20 +193,6 @@ button {
   width: 1.5rem;
   text-align: center;
   font-weight: 650;
-}
-.sidebar-note {
-  margin: auto 0.75rem 0;
-  padding-top: 3rem;
-}
-.sidebar-note span {
-  font-size: 0.9375rem;
-  color: var(--accent);
-  font-weight: 600;
-}
-.sidebar-note p {
-  margin: 0.2rem 0 0;
-  font-size: 0.875rem;
-  color: var(--muted);
 }
 .workspace {
   margin-left: var(--sidebar-width);
@@ -227,6 +242,63 @@ p {
   max-width: 44rem;
   margin: 0;
   font-size: 1.0625rem;
+}
+.section-nav {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.section-nav a {
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  color: var(--muted);
+}
+.section-nav a:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.section-nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 650;
+}
+.immersion-activities {
+  display: grid;
+  gap: 1rem;
+}
+.immersion-activity {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  padding: 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  text-decoration: none;
+}
+.immersion-activity:hover {
+  border-color: var(--accent);
+}
+.immersion-letter {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 1.2rem;
+}
+.immersion-activity p {
+  margin: 0.6rem 0 0;
+}
+.immersion-action {
+  grid-column: 2;
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 .section-heading {
   display: flex;
@@ -706,7 +778,7 @@ nav[aria-label="Sommaire"] a:hover {
   .app-sidebar {
     position: static;
     width: 100%;
-    padding: 1rem 1.25rem 0;
+    padding: 1rem;
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
@@ -724,23 +796,62 @@ nav[aria-label="Sommaire"] a:hover {
     height: 2.2rem;
     font-size: 1.1rem;
   }
-  .app-sidebar .nav-label,
-  .sidebar-note {
+  .mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.65rem;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .sidebar-navigation {
+    padding-top: 1rem;
+  }
+  .sidebar-navigation[data-open="false"] {
     display: none;
   }
   .main-nav {
-    display: flex;
-    flex-wrap: wrap;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.35rem;
-    padding: 1rem 0 0.7rem;
+    margin-bottom: 1rem;
   }
   .main-nav a {
     gap: 0.4rem;
     padding: 0.55rem 0.7rem;
     font-size: 0.875rem;
   }
-  .nav-symbol {
-    display: none;
+  .app-sidebar .sidebar-account {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.65rem 0.7rem 0;
+  }
+  .section-nav {
+    margin-bottom: 1.5rem;
+    gap: 0.15rem;
+  }
+  .section-nav a {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.875rem;
+  }
+  .immersion-activity {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.4rem;
+  }
+  .immersion-letter {
+    grid-row: auto;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .immersion-action {
+    grid-column: auto;
   }
   .workspace {
     margin: 0;
@@ -825,6 +936,7 @@ nav[aria-label="Sommaire"] a:hover {
   .skip-link,
   .document-toolbar,
   .document-tabs,
+  .section-nav,
   .module-neighbours,
   .desktop-toc,
   .mobile-toc,

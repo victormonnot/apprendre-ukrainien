@@ -5,7 +5,7 @@ import { LearningOverview } from "@/components/learning-overview";
 import { ExerciseOverview } from "@/components/exercise-overview";
 import { ReviewOverview } from "@/components/review-overview";
 
-export const metadata: Metadata = { title: "Parcours" };
+export const metadata: Metadata = { title: "Cours & fiches" };
 
 export default async function CourseCatalogPage({
   searchParams,
@@ -23,12 +23,29 @@ export default async function CourseCatalogPage({
   return (
     <main id="main-content" className="page catalog-page" tabIndex={-1}>
       <header className="page-heading">
-        <p className="eyebrow">Apprendre, comprendre, pratiquer</p>
-        <h1>Mon parcours</h1>
+        <p className="eyebrow">Lire, comprendre, s’exercer</p>
+        <h1>Cours & fiches</h1>
         <p className="page-description">
           Des cours à explorer à ton rythme, un module après l’autre.
         </p>
       </header>
+      <nav className="section-nav" aria-label="Choisir un support">
+        {(
+          [
+            ["cours", "Cours"],
+            ["vocabulaire", "Vocabulaire"],
+            ["exercices", "Exercices"],
+          ] as const
+        ).map(([value, label]) => (
+          <Link
+            key={value}
+            href={value === "cours" ? "/parcours" : `/parcours?view=${value}`}
+            aria-current={selectedView === value ? "page" : undefined}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
       <LearningOverview />
       <ReviewOverview />
       <div className="section-heading">

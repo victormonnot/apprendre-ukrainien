@@ -57,7 +57,8 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`, then choose **Ouvrir le cours** in the first module.
+Open `http://127.0.0.1:3000` and choose an activity from the home page.
+**Cours & fiches** contains the modules, vocabulary and exercises.
 No environment file is required for the core features. Local work is saved in
 `.data/`, which is excluded from Git.
 

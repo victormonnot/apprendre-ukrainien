@@ -220,7 +220,7 @@ async function loginForm(page: Page, user: string, secret = password) {
   );
   await page.getByRole("button", { name: "Se connecter", exact: true }).click();
   expect((await response).status()).toBe(200);
-  await expect(page).toHaveURL(/\/parcours$/);
+  await expect(page).toHaveURL("/");
 }
 
 async function delayAuthCheck(page: Page) {

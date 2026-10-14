@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { learningResources } from "@/content/resources";
 import { ResourceLibrary } from "@/components/resource-library";
+import { ImmersionNav } from "@/components/immersion-nav";
 
 export const metadata: Metadata = { title: "Médiathèque" };
 export default function ResourcesPage() {
   return (
     <main id="main-content" className="page catalog-page" tabIndex={-1}>
+      <ImmersionNav />
       <header className="page-heading">
         <p className="eyebrow">Écouter et explorer</p>
         <h1>Ma médiathèque</h1>

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { cafeScenes } from "@/content/scenes";
 import { CafeWorkspace } from "@/components/cafe-workspace";
+import { ImmersionNav } from "@/components/immersion-nav";
 
 export const metadata: Metadata = { title: "Le café" };
 
 export default function CafePage() {
   return (
     <main id="main-content" className="page cafe-page" tabIndex={-1}>
+      <ImmersionNav />
       <header className="page-heading">
         <p className="eyebrow">Des mots aux rencontres</p>
         <h1>Le café</h1>

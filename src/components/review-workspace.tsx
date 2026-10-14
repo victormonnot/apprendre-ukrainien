@@ -635,7 +635,7 @@ function ReviewWorkspaceContent({
             </div>
           )}
           <div className="review-card-footer">
-            <Link href="/parcours">Revenir au parcours</Link>
+            <Link href="/">Revenir à l’accueil</Link>
             <span>
               Tu pourras reprendre cette carte. Quitter n’attribue aucune note.
             </span>

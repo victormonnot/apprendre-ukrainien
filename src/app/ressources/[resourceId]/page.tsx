@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getResource, learningResources } from "@/content/resources";
 import { ResourceWorkspace } from "@/components/resource-workspace";
+import { ImmersionNav } from "@/components/immersion-nav";
 import { formatResourceTime } from "@/lib/resource-time";
 
 type Props = { params: Promise<{ resourceId: string }> };
@@ -23,6 +24,7 @@ export default async function ResourcePage({ params }: Props) {
   if (!resource) notFound();
   return (
     <main id="main-content" className="page resource-page" tabIndex={-1}>
+      <ImmersionNav />
       <nav
         className="breadcrumbs resource-breadcrumbs"
         aria-label="Fil d’Ariane"

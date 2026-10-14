@@ -24,7 +24,7 @@ function safeDestination(value: string | null) {
     !value.includes("\\") &&
     !/^\/(connexion|inscription)(?:[/?#]|$)/.test(value)
     ? value
-    : "/parcours";
+    : "/";
 }
 
 export function AuthenticationForm({ mode }: { mode: "login" | "register" }) {
@@ -79,7 +79,7 @@ export function AuthenticationForm({ mode }: { mode: "login" | "register" }) {
           Cette installation fonctionne sans compte. Tes données restent dans
           cet espace.
         </p>
-        <Link href="/parcours">Ouvrir le parcours</Link>
+        <Link href="/">Revenir à l’accueil</Link>
       </section>
     );
   if (auth.account)
@@ -229,7 +229,7 @@ export function AuthenticationForm({ mode }: { mode: "login" | "register" }) {
           </>
         )}
       </p>
-      <Link href="/parcours">Parcourir les cours librement →</Link>
+      <Link href="/">Découvrir les activités →</Link>
     </section>
   );
 }
@@ -286,7 +286,7 @@ export function AccountSettings() {
       <section className="account-card">
         <h1>Espace local</h1>
         <p>Cette installation fonctionne sans compte.</p>
-        <Link href="/parcours">Ouvrir le parcours</Link>
+        <Link href="/">Revenir à l’accueil</Link>
       </section>
     );
   if (!auth.account)
